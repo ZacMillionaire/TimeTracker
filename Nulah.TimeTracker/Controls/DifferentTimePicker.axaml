@@ -1,0 +1,39 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:Nulah.TimeTracker.Controls">
+    <Design.PreviewWith>
+        <controls:DifferentTimePicker />
+    </Design.PreviewWith>
+
+    <Style Selector="controls|DifferentTimePicker">
+        <!-- Set Defaults -->
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid ColumnDefinitions="Auto,Auto,Auto" Height="150">
+                    <ListBox Grid.Column="0" ItemsSource="{TemplateBinding HourPicker}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <ListBox Grid.Column="1" ItemsSource="{TemplateBinding MinutePicker}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <ListBox Grid.Column="2">
+                        <ListBoxItem>
+                            <TextBlock>AM</TextBlock>
+                        </ListBoxItem>
+                        <ListBoxItem>
+                            <TextBlock>PM</TextBlock>
+                        </ListBoxItem>
+                    </ListBox>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>
