@@ -138,10 +138,10 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 			switch (propertyName)
 			{
 				case "Start":
-					StartTime = DateTimeOffset.Now.TimeOfDay;
+					StartTime = new TimeSpan(DateTimeOffset.Now.TimeOfDay.Hours,DateTimeOffset.Now.TimeOfDay.Minutes,0);
 					break;
 				case "End":
-					EndTime = DateTimeOffset.Now.TimeOfDay;
+					EndTime = new TimeSpan(DateTimeOffset.Now.TimeOfDay.Hours,DateTimeOffset.Now.TimeOfDay.Minutes,0);
 					break;
 			}
 		});
@@ -198,7 +198,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 
 	private IValidationState TaskNameValid(string? value)
 	{
-		return value == null || !string.IsNullOrWhiteSpace(value)
+		return !string.IsNullOrWhiteSpace(value)
 			? ValidationState.Valid
 			: new ValidationState(false, "Task name is required");
 	}
@@ -212,8 +212,6 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 
 	private async Task SaveTimeEntryAsync()
 	{
-		RunValidationRules();
-
 		if (ValidationContext.IsValid && _timeManager != null)
 		{
 			IsSaving = true;
@@ -230,13 +228,6 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 
 			IsSaving = false;
 		}
-	}
-
-	private void RunValidationRules()
-	{
-		this.ValidationRule(viewmodel => viewmodel.TaskName, _taskNameNotEmpty);
-		this.ValidationRule(viewmodel => viewmodel.SelectedDate, _dateRequired);
-		this.ValidationRule(viewmodel => viewmodel.StartTime, _startTimeRequired);
 	}
 
 	private async Task CreateNewEntry(TimeEntryDto newEntry, TimeManager timeManager)

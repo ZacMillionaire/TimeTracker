@@ -20,10 +20,6 @@ public partial class TimeEntryCreateEdit : ReactiveUserControl<TimeEntryCreateEd
 		this.WhenActivated(disposables =>
 		{
 			this.BindValidation(ViewModel,
-					vm => vm.TaskName,
-					v => v.TaskNameValidationError.Text)
-				.DisposeWith(disposables);
-			this.BindValidation(ViewModel,
 					vm => vm.Duration,
 					v => v.StartEndValidationError.Text)
 				.DisposeWith(disposables);
