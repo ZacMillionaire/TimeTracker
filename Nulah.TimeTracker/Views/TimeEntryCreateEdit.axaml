@@ -12,9 +12,12 @@
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:TimeEntryCreateEditViewModelDesignTime />
     </Design.DataContext>
-    <StackPanel Spacing="10">
+    <StackPanel Spacing="10" Margin="5">
         <Label Content="Task Name" />
         <AutoCompleteBox Watermark="Start typing..." IsTextCompletionEnabled="True" Text="{Binding TaskName}" />
+        
+        <Label Content="Colour" />
+        <ColorPicker Color="{Binding Colour}" HorizontalAlignment="Left"/>
 
         <Label Content="Description" />
         <TextBox Watermark="Start typing..." MinLines="5" Text="{Binding Description}" />

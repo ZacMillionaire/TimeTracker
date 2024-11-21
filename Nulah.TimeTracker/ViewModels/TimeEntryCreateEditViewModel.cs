@@ -10,6 +10,7 @@ using Avalonia;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Nulah.TimeTracker.Core;
 using Nulah.TimeTracker.Domain.Models;
@@ -59,6 +60,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 	private TimeSpan? _startTime;
 	private TimeSpan? _endTime;
 	private bool _isSaving;
+	private Color? _colour;
 
 	public string? TaskName
 	{
@@ -96,6 +98,12 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 		set => this.RaiseAndSetIfChanged(ref _isSaving, value);
 	}
 
+	public Color? Colour
+	{
+		get => _colour;
+		set => this.RaiseAndSetIfChanged(ref _colour, value);
+	}
+
 	private readonly IObservable<IValidationState> _taskNameNotEmpty;
 	private readonly IObservable<IValidationState> _dateRequired;
 	private readonly IObservable<IValidationState> _startTimeRequired;
@@ -118,7 +126,9 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 			this.WhenAnyValue(
 				x => x.StartTime,
 				x => x.EndTime,
-				(start, end) => start.HasValue
+				x => x.SelectedDate,
+				x => x.TaskName,
+				(start, end, selected, name) => start.HasValue && selected.HasValue && !string.IsNullOrWhiteSpace(name)
 			)
 		);
 
@@ -138,10 +148,10 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 			switch (propertyName)
 			{
 				case "Start":
-					StartTime = new TimeSpan(DateTimeOffset.Now.TimeOfDay.Hours,DateTimeOffset.Now.TimeOfDay.Minutes,0);
+					StartTime = new TimeSpan(DateTimeOffset.Now.TimeOfDay.Hours, DateTimeOffset.Now.TimeOfDay.Minutes, 0);
 					break;
 				case "End":
-					EndTime = new TimeSpan(DateTimeOffset.Now.TimeOfDay.Hours,DateTimeOffset.Now.TimeOfDay.Minutes,0);
+					EndTime = new TimeSpan(DateTimeOffset.Now.TimeOfDay.Hours, DateTimeOffset.Now.TimeOfDay.Minutes, 0);
 					break;
 			}
 		});
@@ -196,6 +206,29 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 		this.ValidationRule(viewmodel => viewmodel.Duration, _startEndValid);
 	}
 
+
+	public void LoadTimeEntry(int timeEntryId)
+	{
+		if (_timeManager != null)
+		{
+			Dispatcher.UIThread.InvokeAsync(async () =>
+			{
+				if (await _timeManager.GetTimeEntry(timeEntryId) is { } timeEntry)
+				{
+					_timeEntryId = timeEntry.Id;
+					TaskName = timeEntry.Name;
+					Description = timeEntry.Description;
+					SelectedDate = timeEntry.Start.Date;
+					StartTime = timeEntry.Start.TimeOfDay;
+					EndTime = timeEntry.End?.TimeOfDay;
+					Colour = timeEntry.Colour != null
+						? Color.FromUInt32(timeEntry.Colour.Value)
+						: null;
+				}
+			});
+		}
+	}
+
 	private IValidationState TaskNameValid(string? value)
 	{
 		return !string.IsNullOrWhiteSpace(value)
@@ -205,7 +238,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 
 	private IValidationState DateRequiredValid(DateTimeOffset? value)
 	{
-		return value == null || !value.HasValue
+		return !value.HasValue
 			? new ValidationState(false, "Date is required")
 			: ValidationState.Valid;
 	}
@@ -215,16 +248,23 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 		if (ValidationContext.IsValid && _timeManager != null)
 		{
 			IsSaving = true;
-
 			var newEntryDto = new TimeEntryDto()
 			{
 				Name = _taskName!,
 				Description = _description,
 				Start = _selectedDate!.Value.Add(_startTime!.Value),
-				End = _endTime.HasValue ? _selectedDate!.Value.Add(_endTime!.Value) : null
+				End = _endTime.HasValue ? _selectedDate!.Value.Add(_endTime!.Value) : null,
+				Colour = Colour?.ToUInt32()
 			};
-
-			await CreateNewEntry(newEntryDto, _timeManager);
+			if (_timeEntryId == null)
+			{
+				await CreateNewEntry(newEntryDto, _timeManager);
+			}
+			else
+			{
+				newEntryDto.Id = _timeEntryId.Value;
+				await UpdateExistingEntry(newEntryDto, _timeManager);
+			}
 
 			IsSaving = false;
 		}
@@ -238,22 +278,37 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 		{
 			TimeEntryCreated.Invoke(timeEntry.Id);
 			Reset();
-			this.ClearValidationRules();
 		}
 		else
 		{
 			throw new NotImplementedException("create result failed not implemented");
 		}
 	}
+	
+	private async Task UpdateExistingEntry(TimeEntryDto newEntry, TimeManager timeManager)
+	{
+		var createResult = await timeManager.UpdateAsync(newEntry);
 
+		if (createResult is { IsError: false, TimeEntry: { } timeEntry })
+		{
+			TimeEntryCreated.Invoke(timeEntry.Id);
+			Reset();
+		}
+		else
+		{
+			throw new NotImplementedException("update result failed not implemented");
+		}
+	}
+	
 	private void Reset()
 	{
-		StartTime = DateTimeOffset.Now.TimeOfDay;
+		_timeEntryId = null;
+		StartTime = null;
 		EndTime = null;
-		SelectedDate = DateTimeOffset.Now.Date;
+		SelectedDate = null;
 		TaskName = null;
 		Description = null;
-		_timeEntryId = null;
+		Colour = null;
 	}
 }
 
