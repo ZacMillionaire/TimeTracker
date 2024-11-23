@@ -10,7 +10,6 @@
 
     <Style Selector="controls|TimeEntrySmall">
         <Setter Property="BackgroundHover" Value="AliceBlue" />
-        <Setter Property="FontSize" Value="18"></Setter>
         <Setter Property="Template">
             <ControlTemplate>
                 <ContentControl>
@@ -20,9 +19,10 @@
                             <Setter Property="FontWeight" Value="Bold" />
                         </Style>
                         <Style Selector="TextBlock.Start">
-                            <Setter Property="Foreground" Value="Aqua"></Setter>
+                            <Setter Property="Foreground" Value="#0EAF00"></Setter>
                         </Style>
-                        <Style Selector="TextBlock.Start">
+                        <Style Selector="TextBlock.End">
+                            <Setter Property="Foreground" Value="#2A88CC"></Setter>
                         </Style>
                         <Style Selector="TextBlock.Name">
                             <Setter Property="FontWeight" Value="Bold" />
@@ -49,14 +49,22 @@
                             <Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"
                                     Width="10"
                                     Background="{Binding Colour, Converter={StaticResource ColourConverter}}" />
-                            <StackPanel Grid.Column="1" Grid.Row="0" Grid.RowSpan="2">
+                            <Grid Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
+                                  RowDefinitions="Auto,*,Auto">
                                 <TextBlock Classes="Start"
+                                           Grid.Row="0"
                                            Padding="5,0"
                                            Text="{Binding Start, StringFormat='hh:mm'}" />
+                                <Border Grid.Row="1"
+                                        Width="5"
+                                        Background="#D6D6D6"
+                                        CornerRadius="5" />
                                 <TextBlock Classes="End"
+                                           Grid.Row="2"
+                                           VerticalAlignment="Bottom"
                                            Padding="5,0"
                                            Text="{Binding End, StringFormat='hh:mm'}" />
-                            </StackPanel>
+                            </Grid>
                             <TextBlock Grid.Column="2" Grid.Row="0"
                                        Classes="Name"
                                        Text="{Binding Name}" />

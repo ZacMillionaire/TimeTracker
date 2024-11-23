@@ -1,0 +1,29 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:Nulah.TimeTracker.Controls"
+             xmlns:converters="clr-namespace:Nulah.TimeTracker.Converters"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Nulah.TimeTracker.Controls.FlexingTimeSegment"
+             x:DataType="controls:FlexingTimeSegment">
+    <UserControl.Resources>
+        <converters:ColourConverter x:Key="ColourConverter" />
+    </UserControl.Resources>
+    <StackPanel>
+        <Border
+            IsVisible="{Binding TimeEntry.End, 
+                RelativeSource={RelativeSource FindAncestor, AncestorType=controls:FlexingTimeSegment}, 
+                Converter={x:Static ObjectConverters.IsNotNull}
+            }"
+            Background="{Binding TimeEntry.Colour,
+                RelativeSource={RelativeSource FindAncestor, AncestorType=controls:FlexingTimeSegment}, 
+                Converter={StaticResource ColourConverter}
+            }"
+            Width="{Binding DisplayWidth,
+                RelativeSource={RelativeSource FindAncestor, AncestorType=controls:FlexingTimeSegment}
+            }"
+            Height="10">
+        </Border>
+    </StackPanel>
+</UserControl>

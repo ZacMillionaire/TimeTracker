@@ -41,7 +41,7 @@ public class TimeManager
 		return await _timeTrackerRepository.GetEntries(timeEntryQueryCriteria);
 	}
 
-	public async Task<TimeEntryDto> GetTimeEntry(int timeEntryId)
+	public async Task<TimeEntryDto?> GetTimeEntry(int timeEntryId)
 	{
 		return await _timeTrackerRepository.GetEntry(timeEntryId);
 	}

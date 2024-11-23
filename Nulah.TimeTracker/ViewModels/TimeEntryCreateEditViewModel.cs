@@ -47,6 +47,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 	};
 
 	public ICommand SaveTimeEntryCommand { get; protected set; }
+	public ICommand ClearTimeEntryCommand { get; protected set; }
 	public ICommand IncrementEndTime { get; protected set; }
 	public ReactiveCommand<Unit, Unit> ClearEndTime { get; protected set; }
 
@@ -119,8 +120,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 	public TimeEntryCreateEditViewModel(TimeManager? timeManager = null)
 	{
 		_timeManager = timeManager ?? Locator.Current.GetService<TimeManager>();
-
-
+		
 		SaveTimeEntryCommand = ReactiveCommand.CreateFromTask(
 			SaveTimeEntryAsync,
 			this.WhenAnyValue(
@@ -131,6 +131,8 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 				(start, end, selected, name) => start.HasValue && selected.HasValue && !string.IsNullOrWhiteSpace(name)
 			)
 		);
+
+		ClearTimeEntryCommand = ReactiveCommand.Create(Reset);
 
 		IncrementEndTime = ReactiveCommand.Create(
 			(TimeSpan increaseBy) =>
@@ -248,14 +250,17 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 		if (ValidationContext.IsValid && _timeManager != null)
 		{
 			IsSaving = true;
+			
 			var newEntryDto = new TimeEntryDto()
 			{
 				Name = _taskName!,
 				Description = _description,
-				Start = _selectedDate!.Value.Add(_startTime!.Value),
-				End = _endTime.HasValue ? _selectedDate!.Value.Add(_endTime!.Value) : null,
+				// Use .Date to ensure we never add time onto any time other than midnight
+				Start = _selectedDate!.Value.Date.Add(_startTime!.Value),
+				End = _endTime.HasValue ? _selectedDate!.Value.Date.Add(_endTime!.Value) : null,
 				Colour = Colour?.ToUInt32()
 			};
+			
 			if (_timeEntryId == null)
 			{
 				await CreateNewEntry(newEntryDto, _timeManager);

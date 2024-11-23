@@ -5,6 +5,7 @@
              xmlns:vm="using:Nulah.TimeTracker.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800"
              x:DataType="vm:TimeEntryCreateEditViewModel"
+             IsEnabled="{Binding !IsSaving}"
              x:Class="Nulah.TimeTracker.Views.TimeEntryCreateEdit">
 
     <Design.DataContext>
@@ -73,6 +74,7 @@
         </TextBlock>
         <UniformGrid Columns="2">
             <Button Margin="2.5,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Command="{Binding ClearTimeEntryCommand}"
                     Background="Orange">
                 Cancel
             </Button>

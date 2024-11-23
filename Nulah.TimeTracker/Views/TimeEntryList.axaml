@@ -20,23 +20,27 @@
                     <Setter Property="Background" Value="#f9f9f9" />
                     <Setter Property="Margin" Value="0,5,0,0" />
                     <Setter Property="CornerRadius" Value="10" />
-                    <Setter Property="Padding" Value="5" />
+                    <Setter Property="Padding" Value="0" />
                 </Style>
                 <Style Selector="ContentPresenter:nth-child(1) > Border#CollapsibleDateGroup">
-                    <Setter Property="Background" Value="#ffffff" />
+                    <!-- <Setter Property="Background" Value="#ffffff" /> -->
                     <Setter Property="Margin" Value="0" />
                 </Style>
                 <Style Selector="ContentPresenter:nth-last-child(1) > Border#CollapsibleDateGroup">
-                    <Setter Property="Background" Value="#f0f0f0" />
+                    <!-- <Setter Property="Background" Value="#f0f0f0" /> -->
                 </Style>
             </ItemsControl.Styles>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Border BorderThickness="1" BorderBrush="#EBEBEB"
+                    <Border BorderThickness="1"
+                            BorderBrush="#EBEBEB"
+                            Classes.IsExpanded="{Binding Expanded}"
+                            ClipToBounds="True"
                             Name="CollapsibleDateGroup">
                         <Grid RowDefinitions="Auto,Auto">
+                            <!-- date header -->
                             <Border Grid.Row="0" PointerReleased="ToggleExpandDateGroup"
-                                    Padding="5"
+                                    Name="DateGroupHeader"
                                     CornerRadius="5">
                                 <Border.Styles>
                                     <Style Selector="Border">
@@ -46,13 +50,37 @@
                                         <Setter Property="Background" Value="AliceBlue" />
                                     </Style>
                                 </Border.Styles>
-                                <Grid>
+                                <Grid RowDefinitions="*,Auto">
                                     <TextBlock
+                                        Padding="5"
+                                        Grid.Row="0"
                                         FontSize="20"
                                         Text="{Binding Date, StringFormat='dd/MM/yyy'}" />
+                                    <ItemsControl
+                                        Grid.Row="1"
+                                        Background="#ff00ff"
+                                        ItemsSource="{Binding Entries}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel>
+                                                    <controls:FlexingTimeSegment
+                                                        TimeEntry="{Binding}"
+                                                        TotalDuration="{Binding $parent[ItemsControl].((viewModels:DateGroup)DataContext).Duration}"
+                                                        TotalBoundary="{Binding Bounds, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}, Mode=FindAncestor}}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                 </Grid>
                             </Border>
-                            <ItemsControl Grid.Row="1" ItemsSource="{Binding Entries}"
+                            <!-- time entries for day -->
+                            <ItemsControl Grid.Row="1"
+                                          ItemsSource="{Binding Entries}"
                                           IsVisible="{Binding Expanded}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>

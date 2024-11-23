@@ -104,6 +104,7 @@ public class TimeEntryListViewModel : ViewModelBase
 				Entries = x.OrderBy(y => y.Start)
 					.ToList()
 			})
+			.OrderByDescending(x=> x.Date)
 			.ToList();
 	}
 }
@@ -111,7 +112,9 @@ public class TimeEntryListViewModel : ViewModelBase
 public class DateGroup : ReactiveObject
 {
 	public DateOnly Date { get; set; }
-	public List<TimeEntryDto> Entries { get; set; }
+	public List<TimeEntryDto> Entries { get; set; } = new();
+
+	public TimeSpan Duration => new (Entries.Where(x => x.End.HasValue).Select(x => x.End - x.Start).Sum(x => x!.Value.Ticks));
 
 	private bool _expanded;
 

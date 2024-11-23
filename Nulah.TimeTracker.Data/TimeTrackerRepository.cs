@@ -39,7 +39,7 @@ public class TimeTrackerRepository
 			Colour = newTimeEntry.Colour
 		};
 
-		var db = new SQLiteAsyncConnection(_databaseLocation);
+		var db = GetConnection();
 		await db.InsertAsync(newEntry);
 
 		return MapToDto(newEntry);
@@ -47,7 +47,7 @@ public class TimeTrackerRepository
 
 	public async Task<TimeEntryDto?> UpdateAsync(TimeEntryDto newEntry)
 	{
-		var db = new SQLiteAsyncConnection(_databaseLocation);
+		var db = GetConnection();
 		var updatingEntry = await db.Table<TimeEntry>()
 			.FirstOrDefaultAsync(x => x.Id == newEntry.Id);
 
@@ -55,13 +55,13 @@ public class TimeTrackerRepository
 		{
 			return null;
 		}
-		
+
 		updatingEntry.Name = newEntry.Name;
 		updatingEntry.Description = newEntry.Description;
 		updatingEntry.Start = newEntry.Start;
 		updatingEntry.End = newEntry.End;
 		updatingEntry.Colour = newEntry.Colour;
-		
+
 		await db.UpdateAsync(updatingEntry);
 
 		return MapToDto(updatingEntry);
@@ -69,7 +69,7 @@ public class TimeTrackerRepository
 
 	public async Task<List<TimeEntryDto>> GetEntries(TimeEntryQueryCriteria? timeEntryQueryCriteria = null)
 	{
-		var db = new SQLiteAsyncConnection(_databaseLocation);
+		var db = GetConnection();
 		var timeEntries = await db.Table<TimeEntry>()
 			.Where(BuildTransactionQuery(timeEntryQueryCriteria))
 			.ToListAsync();
@@ -81,7 +81,7 @@ public class TimeTrackerRepository
 
 	public async Task<TimeEntryDto?> GetEntry(int timeEntryId)
 	{
-		var db = new SQLiteAsyncConnection(_databaseLocation);
+		var db = GetConnection();
 		var timeEntry = await db.Table<TimeEntry>()
 			.FirstOrDefaultAsync(x => x.Id == timeEntryId);
 
@@ -105,6 +105,11 @@ public class TimeTrackerRepository
 			End = newEntry.End?.ToOffset(TimeZoneInfo.Local.BaseUtcOffset),
 			Colour = newEntry.Colour
 		};
+	}
+
+	private SQLiteAsyncConnection GetConnection()
+	{
+		return new SQLiteAsyncConnection(_databaseLocation);
 	}
 
 	/// <summary>
