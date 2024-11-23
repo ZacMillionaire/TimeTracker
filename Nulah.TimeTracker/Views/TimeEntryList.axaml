@@ -6,39 +6,33 @@
              xmlns:controls="clr-namespace:Nulah.TimeTracker.Controls"
              mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="700"
              x:DataType="viewModels:TimeEntryListViewModelDesignTime"
-             x:Class="Nulah.TimeTracker.Views.TimeEntryList">
+             x:Class="Nulah.TimeTracker.Views.TimeEntryList"
+             FontFamily="{StaticResource Nunito}">
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <viewModels:TimeEntryListViewModelDesignTime />
     </Design.DataContext>
-    <UserControl.Styles>
-        <Style Selector=".timeEntryStartEnd">
-            
-        </Style>
-    </UserControl.Styles>
     <ScrollViewer>
         <ItemsControl ItemsSource="{Binding EntryGroups}" Margin="5">
             <ItemsControl.Styles>
-                <Style Selector="ContentPresenter Border#CollapsibleDateGroup">
-                    <Setter Property="Background" Value="Aqua" />
+                <Style Selector="ContentPresenter > Border#CollapsibleDateGroup">
+                    <Setter Property="Background" Value="#f9f9f9" />
                     <Setter Property="Margin" Value="0,5,0,0" />
-                    <Setter Property="CornerRadius" Value="5" />
+                    <Setter Property="CornerRadius" Value="10" />
                     <Setter Property="Padding" Value="5" />
                 </Style>
-
-                <Style Selector="ContentPresenter:nth-child(1) Border#CollapsibleDateGroup">
-                    <Setter Property="Background" Value="Yellow" />
+                <Style Selector="ContentPresenter:nth-child(1) > Border#CollapsibleDateGroup">
+                    <Setter Property="Background" Value="#ffffff" />
                     <Setter Property="Margin" Value="0" />
                 </Style>
-
-                <Style Selector="ContentPresenter:nth-last-child(1) Border#CollapsibleDateGroup">
-                    <Setter Property="Background" Value="Green" />
+                <Style Selector="ContentPresenter:nth-last-child(1) > Border#CollapsibleDateGroup">
+                    <Setter Property="Background" Value="#f0f0f0" />
                 </Style>
             </ItemsControl.Styles>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Border BorderThickness="1" BorderBrush="Black"
+                    <Border BorderThickness="1" BorderBrush="#EBEBEB"
                             Name="CollapsibleDateGroup">
                         <Grid RowDefinitions="Auto,Auto">
                             <Border Grid.Row="0" PointerReleased="ToggleExpandDateGroup"
@@ -53,7 +47,9 @@
                                     </Style>
                                 </Border.Styles>
                                 <Grid>
-                                    <TextBlock Text="{Binding Date, StringFormat='dd/MM/yyy'}" />
+                                    <TextBlock
+                                        FontSize="20"
+                                        Text="{Binding Date, StringFormat='dd/MM/yyy'}" />
                                 </Grid>
                             </Border>
                             <ItemsControl Grid.Row="1" ItemsSource="{Binding Entries}"
