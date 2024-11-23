@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:Nulah.TimeTracker.ViewModels"
+             xmlns:controls="clr-namespace:Nulah.TimeTracker.Controls"
              mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="700"
              x:DataType="viewModels:TimeEntryListViewModelDesignTime"
              x:Class="Nulah.TimeTracker.Views.TimeEntryList">
@@ -11,6 +12,11 @@
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <viewModels:TimeEntryListViewModelDesignTime />
     </Design.DataContext>
+    <UserControl.Styles>
+        <Style Selector=".timeEntryStartEnd">
+            
+        </Style>
+    </UserControl.Styles>
     <ScrollViewer>
         <ItemsControl ItemsSource="{Binding EntryGroups}" Margin="5">
             <ItemsControl.Styles>
@@ -54,25 +60,7 @@
                                           IsVisible="{Binding Expanded}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border PointerReleased="OpenSelectedTimeEntry">
-                                            <Border.Styles>
-                                                <Style Selector="Border">
-                                                    <Setter Property="Background" Value="Transparent" />
-                                                </Style>
-                                                <Style Selector="Border:pointerover">
-                                                    <Setter Property="Background" Value="AliceBlue" />
-                                                </Style>
-                                            </Border.Styles>
-                                            <Grid RowDefinitions="*,*" ColumnDefinitions="Auto,*">
-                                                <TextBlock Grid.Column="0" Grid.Row="0"
-                                                           Text="{Binding Start, StringFormat='hh:mm'}" />
-                                                <TextBlock Grid.Column="0" Grid.Row="1"
-                                                           Text="{Binding End, StringFormat='hh:mm'}" />
-                                                <TextBlock Grid.Column="1" Grid.Row="0" Text="{Binding Name}" />
-                                                <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Description}"
-                                                           TextWrapping="WrapWithOverflow" />
-                                            </Grid>
-                                        </Border>
+                                        <controls:TimeEntrySmall OpenSelectedTimeEntry="OpenSelectedTimeEntry"/>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>

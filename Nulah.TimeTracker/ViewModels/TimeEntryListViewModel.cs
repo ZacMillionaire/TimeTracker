@@ -35,6 +35,8 @@ public class TimeEntryListViewModelDesignTime : TimeEntryListViewModel
 				};
 			})
 			.ToList();
+
+		EntryGroups.First().Expanded = true;
 	}
 }
 

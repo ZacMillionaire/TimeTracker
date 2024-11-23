@@ -1,9 +1,7 @@
 ﻿using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Markup.Xaml;
 using Avalonia.ReactiveUI;
-using Nulah.TimeTracker.Domain.Models;
+using Nulah.TimeTracker.Models;
 using Nulah.TimeTracker.ViewModels;
 
 namespace Nulah.TimeTracker.Views;
@@ -23,11 +21,11 @@ public partial class TimeEntryList : ReactiveUserControl<TimeEntryListViewModel>
 		}
 	}
 
-	private void OpenSelectedTimeEntry(object? sender, PointerReleasedEventArgs e)
+	private void OpenSelectedTimeEntry(object? sender, TimeEntryClickedEventArgs e)
 	{
-		if (sender is StyledElement { DataContext: TimeEntryDto timeEntryDto })
+		if (e.TimeEntry != null)
 		{
-			ViewModel?.TimeEntrySelected.Invoke(timeEntryDto.Id);
+			ViewModel?.TimeEntrySelected.Invoke(e.TimeEntry.Id);
 		}
 	}
 }

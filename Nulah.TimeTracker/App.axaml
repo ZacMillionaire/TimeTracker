@@ -8,6 +8,7 @@
         <FluentTheme />
         <!-- controls -->
         <StyleInclude Source="Controls/DifferentTimePicker.axaml"/>
+        <StyleInclude Source="Controls/TimeEntrySmall.axaml"/>
         <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
         <!-- <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Simple/Simple.xaml" /> -->
     </Application.Styles>
