@@ -35,6 +35,17 @@ public class TimeEntrySmall : TemplatedControl
 		get => GetValue(BackgroundHoverProperty);
 		set => SetValue(BackgroundHoverProperty, value);
 	}
+	
+	public static readonly DirectProperty<TimeEntrySmall, TimeSpan?> DurationTimeSpanProperty =
+		AvaloniaProperty.RegisterDirect<TimeEntrySmall, TimeSpan?>(nameof(DurationTimeSpan), o => o.DurationTimeSpan);
+
+	private TimeSpan? _durationTimeSpan;
+
+	public TimeSpan? DurationTimeSpan
+	{
+		get => _durationTimeSpan;
+		private set => SetAndRaise(DurationTimeSpanProperty, ref _durationTimeSpan, value);
+	}
 
 	#endregion
 
@@ -71,6 +82,12 @@ public class TimeEntrySmall : TemplatedControl
 	protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
 	{
 		Container = e.NameScope.Find<Border>("TimeEntryBorder") ?? throw new Exception("Container border not found");
+		
+		if (DataContext is TimeEntryDto { End: not null } timeEntryDto)
+		{
+			DurationTimeSpan = timeEntryDto.End - timeEntryDto.Start;
+		}
+		
 		base.OnApplyTemplate(e);
 	}
 }

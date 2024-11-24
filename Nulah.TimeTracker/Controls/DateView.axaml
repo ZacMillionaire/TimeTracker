@@ -3,7 +3,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:controls="clr-namespace:Nulah.TimeTracker.Controls"
-             xmlns:viewModels="clr-namespace:Nulah.TimeTracker.ViewModels"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450"
              x:Class="Nulah.TimeTracker.Controls.DateView"
              x:DataType="controls:DateViewModel">
@@ -30,7 +31,16 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Name="DateParent">
+                        <Border Name="DateParent" Background="Transparent">
+                            <i:Interaction.Behaviors>
+                                <ia:EventTriggerBehavior
+                                    EventName="PointerReleased"
+                                    SourceObject="{Binding #DateParent}">
+                                    <ia:InvokeCommandAction
+                                        Command="{Binding $parent[ItemsControl].((controls:DateViewModel)DataContext).SelectDateCommand}"
+                                        CommandParameter="{Binding}" />
+                                </ia:EventTriggerBehavior>
+                            </i:Interaction.Behaviors>
                             <Grid RowDefinitions="Auto,Auto,Auto,Auto">
                                 <TextBlock Grid.Row="0"
                                            FontSize="30"
@@ -55,5 +65,16 @@
             </ItemsControl>
         </Border>
         <!-- end header date group -->
+        <!-- time entries for selected date -->
+        <Grid Grid.Row="1">
+            <ItemsControl ItemsSource="{Binding Selected.Entries}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <controls:TimeEntrySmall />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+        <!-- end time entries for selected date -->
     </Grid>
 </UserControl>
