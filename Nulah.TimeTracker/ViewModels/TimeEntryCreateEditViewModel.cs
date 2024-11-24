@@ -110,7 +110,11 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 	private readonly IObservable<IValidationState> _startTimeRequired;
 	public readonly IObservable<IValidationState> _startEndValid;
 
-	public Action<int> TimeEntryCreated = i =>
+	public Action<TimeEntryDto> TimeEntryCreated = actionedTimeEntry =>
+	{
+	};
+	
+	public Action<TimeEntryDto?> TimeEntryActioned = actionedTimeEntry =>
 	{
 	};
 
@@ -121,7 +125,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 	{
 		_timeManager = timeManager ?? Locator.Current.GetService<TimeManager>();
 		
-		SaveTimeEntryCommand = ReactiveCommand.CreateFromTask(
+		SaveTimeEntryCommand = ReactiveCommand.Create(
 			SaveTimeEntryAsync,
 			this.WhenAnyValue(
 				x => x.StartTime,
@@ -213,9 +217,9 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 	{
 		if (_timeManager != null)
 		{
-			Dispatcher.UIThread.InvokeAsync(async () =>
+			Dispatcher.UIThread.Invoke( () =>
 			{
-				if (await _timeManager.GetTimeEntry(timeEntryId) is { } timeEntry)
+				if (_timeManager.GetTimeEntry(timeEntryId) is { } timeEntry)
 				{
 					_timeEntryId = timeEntry.Id;
 					TaskName = timeEntry.Name;
@@ -245,7 +249,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 			: ValidationState.Valid;
 	}
 
-	private async Task SaveTimeEntryAsync()
+	private void SaveTimeEntryAsync()
 	{
 		if (ValidationContext.IsValid && _timeManager != null)
 		{
@@ -263,25 +267,25 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 			
 			if (_timeEntryId == null)
 			{
-				await CreateNewEntry(newEntryDto, _timeManager);
+				CreateNewEntry(newEntryDto, _timeManager);
 			}
 			else
 			{
 				newEntryDto.Id = _timeEntryId.Value;
-				await UpdateExistingEntry(newEntryDto, _timeManager);
+				UpdateExistingEntry(newEntryDto, _timeManager);
 			}
 
 			IsSaving = false;
 		}
 	}
 
-	private async Task CreateNewEntry(TimeEntryDto newEntry, TimeManager timeManager)
+	private void CreateNewEntry(TimeEntryDto newEntry, TimeManager timeManager)
 	{
-		var createResult = await timeManager.CreateAsync(newEntry);
+		var createResult = timeManager.CreateAsync(newEntry);
 
 		if (createResult is { IsError: false, TimeEntry: { } timeEntry })
 		{
-			TimeEntryCreated.Invoke(timeEntry.Id);
+			TimeEntryCreated.Invoke(timeEntry);
 			Reset();
 		}
 		else
@@ -290,13 +294,13 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 		}
 	}
 	
-	private async Task UpdateExistingEntry(TimeEntryDto newEntry, TimeManager timeManager)
+	private void UpdateExistingEntry(TimeEntryDto newEntry, TimeManager timeManager)
 	{
-		var createResult = await timeManager.UpdateAsync(newEntry);
+		var createResult = timeManager.UpdateAsync(newEntry);
 
 		if (createResult is { IsError: false, TimeEntry: { } timeEntry })
 		{
-			TimeEntryCreated.Invoke(timeEntry.Id);
+			TimeEntryActioned.Invoke(timeEntry);
 			Reset();
 		}
 		else

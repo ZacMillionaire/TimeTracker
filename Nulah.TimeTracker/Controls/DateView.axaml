@@ -9,12 +9,12 @@
              x:Class="Nulah.TimeTracker.Controls.DateView"
              x:DataType="controls:DateViewModel">
     <Design.DataContext>
-        <controls:DateViewModel />
+        <controls:DateViewDesignModel />
     </Design.DataContext>
-    <Grid RowDefinitions="Auto,Auto">
+    <Grid RowDefinitions="Auto,*">
         <!-- header date group -->
         <Border Grid.Row="0" BorderBrush="#EBEBEB" BorderThickness="0,0,0,1">
-            <ItemsControl ItemsSource="{Binding Dates}">
+            <ItemsControl ItemsSource="{Binding TimeEntrySummaries}">
                 <ItemsControl.Styles>
                     <Style Selector="ContentPresenter > Border#DateParent">
                         <Setter Property="BorderThickness" Value="0,0,1,0" />
@@ -67,10 +67,19 @@
         <!-- end header date group -->
         <!-- time entries for selected date -->
         <Grid Grid.Row="1">
-            <ItemsControl ItemsSource="{Binding Selected.Entries}">
+            <ItemsControl ItemsSource="{Binding Selected}">
+                <ItemsControl.Template>
+                    <ControlTemplate>
+                        <ScrollViewer>
+                            <ItemsPresenter />
+                        </ScrollViewer>
+                    </ControlTemplate>
+                </ItemsControl.Template>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <controls:TimeEntrySmall />
+                        <controls:TimeEntrySmall
+                            DataContext="{Binding}"
+                            OpenSelectedTimeEntry="OpenSelectedTimeEntry" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

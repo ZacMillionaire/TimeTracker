@@ -12,11 +12,11 @@
     </UserControl.Resources>
     <StackPanel>
         <Border
-            IsVisible="{Binding TimeEntry.End, 
+            IsVisible="{Binding TimeEntrySummary.Duration, 
                 RelativeSource={RelativeSource FindAncestor, AncestorType=controls:FlexingTimeSegment}, 
                 Converter={x:Static ObjectConverters.IsNotNull}
             }"
-            Background="{Binding TimeEntry.Colour,
+            Background="{Binding TimeEntrySummary.Colour,
                 RelativeSource={RelativeSource FindAncestor, AncestorType=controls:FlexingTimeSegment}, 
                 Converter={StaticResource ColourConverter}
             }"

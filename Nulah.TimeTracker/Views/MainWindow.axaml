@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:Nulah.TimeTracker.Views"
+        xmlns:controls="clr-namespace:Nulah.TimeTracker.Controls"
         mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="400"
         Width="1000" Height="800"
         x:Class="Nulah.TimeTracker.Views.MainWindow"
@@ -18,7 +19,8 @@
     </Design.DataContext>
 
     <Grid ColumnDefinitions="*,2*" RowDefinitions="*,Auto">
-        <views:TimeEntryList Grid.Row="0" Grid.Column="0" DataContext="{Binding  TimeEntryListViewModel}" />
+        <controls:DateView Grid.Row="0" Grid.Column="0" DataContext="{Binding  DateViewModel}" />
+        <!-- <views:TimeEntryList Grid.Row="0" Grid.Column="0" DataContext="{Binding  TimeEntryListViewModel}" /> -->
         <ScrollViewer Grid.Row="0" Grid.Column="1">
             <ContentControl Content="{Binding WindowContent}">
                 <ContentControl.DataTemplates>

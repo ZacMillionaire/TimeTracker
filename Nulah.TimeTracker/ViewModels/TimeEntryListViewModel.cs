@@ -67,9 +67,9 @@ public class TimeEntryListViewModel : ViewModelBase
 	{
 		if (_timeManager != null)
 		{
-			Dispatcher.UIThread.InvokeAsync(async () =>
+			Dispatcher.UIThread.Invoke( () =>
 			{
-				var groupedEntries = await GetTimeEntryDateGroups(_timeManager);
+				var groupedEntries = GetTimeEntryDateGroups(_timeManager);
 
 				if (EntryGroups.Count == 0)
 				{
@@ -94,9 +94,9 @@ public class TimeEntryListViewModel : ViewModelBase
 		}
 	}
 
-	private async Task<List<DateGroup>> GetTimeEntryDateGroups(TimeManager timeManager)
+	private List<DateGroup> GetTimeEntryDateGroups(TimeManager timeManager)
 	{
-		var timeEntries = await timeManager.GetEntries();
+		var timeEntries = timeManager.GetEntries();
 		return timeEntries.GroupBy(x => new DateOnly(x.Start.Year, x.Start.Month, x.Start.Day))
 			.Select(x => new DateGroup()
 			{

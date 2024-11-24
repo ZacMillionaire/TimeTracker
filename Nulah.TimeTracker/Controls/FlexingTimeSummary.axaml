@@ -4,12 +4,13 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:Nulah.TimeTracker.ViewModels"
              xmlns:controls="clr-namespace:Nulah.TimeTracker.Controls"
+             xmlns:data="clr-namespace:Nulah.TimeTracker.Data;assembly=Nulah.TimeTracker.Data"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Nulah.TimeTracker.Controls.FlexingTimeSummary"
-             x:DataType="viewModels:DateGroup">
+             x:DataType="data:SummarisedTimeEntryDto">
     <ItemsControl
         Background="#ff00ff"
-        ItemsSource="{Binding Entries}">
+        ItemsSource="{Binding Summaries}">
         <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
                 <StackPanel Orientation="Horizontal" />
@@ -19,8 +20,8 @@
             <DataTemplate>
                 <StackPanel>
                     <controls:FlexingTimeSegment
-                        TimeEntry="{Binding}"
-                        TotalDuration="{Binding $parent[controls:FlexingTimeSummary].((viewModels:DateGroup)DataContext).Duration}"
+                        TimeEntrySummary="{Binding }"
+                        TotalDuration="{Binding $parent[controls:FlexingTimeSummary].((data:SummarisedTimeEntryDto)DataContext).Duration}"
                         TotalBoundary="{Binding Bounds, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}, Mode=FindAncestor}}" />
                 </StackPanel>
             </DataTemplate>

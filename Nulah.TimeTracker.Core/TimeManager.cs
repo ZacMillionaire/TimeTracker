@@ -15,9 +15,9 @@ public class TimeManager
 		_timeProvider = TimeProvider.System;
 	}
 
-	public async Task<TimeEntryCreateResponse> CreateAsync(TimeEntryDto newTimeEntry)
+	public TimeEntryCreateResponse CreateAsync(TimeEntryDto newTimeEntry)
 	{
-		var created = await _timeTrackerRepository.CreateAsync(newTimeEntry);
+		var created = _timeTrackerRepository.CreateAsync(newTimeEntry);
 
 		return new TimeEntryCreateResponse
 		{
@@ -26,9 +26,9 @@ public class TimeManager
 		};
 	}
 
-	public async Task<TimeEntryUpdateResponse> UpdateAsync(TimeEntryDto newEntry)
+	public TimeEntryUpdateResponse UpdateAsync(TimeEntryDto newEntry)
 	{
-		var updated = await _timeTrackerRepository.UpdateAsync(newEntry);
+		var updated = _timeTrackerRepository.UpdateAsync(newEntry);
 		return new TimeEntryUpdateResponse
 		{
 			IsError = updated == null,
@@ -36,14 +36,20 @@ public class TimeManager
 		};
 	}
 
-	public async Task<List<TimeEntryDto>> GetEntries(TimeEntryQueryCriteria? timeEntryQueryCriteria = null)
+	public List<SummarisedTimeEntryDto> GetEntrySummary(TimeEntryQueryCriteria? timeEntryQueryCriteria = null)
 	{
-		return await _timeTrackerRepository.GetEntries(timeEntryQueryCriteria);
+		return _timeTrackerRepository.GetEntrySummaries(timeEntryQueryCriteria);
+
 	}
 
-	public async Task<TimeEntryDto?> GetTimeEntry(int timeEntryId)
+	public List<TimeEntryDto> GetEntries(TimeEntryQueryCriteria? timeEntryQueryCriteria = null)
 	{
-		return await _timeTrackerRepository.GetEntry(timeEntryId);
+		return _timeTrackerRepository.GetEntries(timeEntryQueryCriteria);
+	}
+
+	public TimeEntryDto? GetTimeEntry(int timeEntryId)
+	{
+		return _timeTrackerRepository.GetEntry(timeEntryId);
 	}
 }
 
