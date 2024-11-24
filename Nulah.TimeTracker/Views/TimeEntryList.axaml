@@ -13,8 +13,8 @@
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <viewModels:TimeEntryListViewModelDesignTime />
     </Design.DataContext>
-    <ScrollViewer>
-        <ItemsControl ItemsSource="{Binding EntryGroups}" Margin="5">
+    <ScrollViewer Padding="0,0,15,0">
+        <ItemsControl ItemsSource="{Binding EntryGroups}">
             <ItemsControl.Styles>
                 <Style Selector="ContentPresenter > Border#CollapsibleDateGroup">
                     <Setter Property="Background" Value="#f9f9f9" />
@@ -32,11 +32,15 @@
             </ItemsControl.Styles>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Border BorderThickness="1"
-                            BorderBrush="#EBEBEB"
+                    <Border BorderThickness="2"
                             Classes.IsExpanded="{Binding Expanded}"
                             ClipToBounds="True"
                             Name="CollapsibleDateGroup">
+                        <Border.Styles>
+                            <Style Selector="Border">
+                                <Setter Property="BorderBrush" Value="#EBEBEB"/>
+                            </Style>
+                        </Border.Styles>
                         <Grid RowDefinitions="Auto,Auto">
                             <!-- date header -->
                             <Border Grid.Row="0" PointerReleased="ToggleExpandDateGroup"
@@ -84,7 +88,7 @@
                                           IsVisible="{Binding Expanded}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <controls:TimeEntrySmall OpenSelectedTimeEntry="OpenSelectedTimeEntry"/>
+                                        <controls:TimeEntrySmall OpenSelectedTimeEntry="OpenSelectedTimeEntry" />
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>

@@ -1,11 +1,11 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Http;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using Nulah.TimeTracker.Core;
 using Nulah.TimeTracker.Data;
 using Nulah.TimeTracker.ViewModels;
@@ -16,6 +16,8 @@ namespace Nulah.TimeTracker;
 
 public partial class App : Application
 {
+	private DispatcherTimer _diagnosticTimer;
+
 	public override void Initialize()
 	{
 		if (!Design.IsDesignMode)
@@ -34,17 +36,46 @@ public partial class App : Application
 			{
 				DataContext = new MainWindowViewModel(),
 			};
+
+			GetMemoryUsage(null, EventArgs.Empty);
+
+			_diagnosticTimer = new DispatcherTimer
+			{
+				Interval = TimeSpan.FromSeconds(5)
+			};
+			_diagnosticTimer.Tick += (s, e) => GetMemoryUsage(desktop.MainWindow.DataContext, EventArgs.Empty);
+			_diagnosticTimer.Start();
 		}
 
 		base.OnFrameworkInitializationCompleted();
 	}
-	
+
+
+	private void GetMemoryUsage(object? sender, EventArgs e)
+	{
+		if (sender is not MainWindowViewModel mainWindowViewModel)
+		{
+			return;
+		}
+
+		using var proc = Process.GetCurrentProcess();
+		// var a = new
+		// {
+		// 	ws = proc.WorkingSet64/1024.0/1024.0,
+		// 	vm = proc.VirtualMemorySize64/1024.0/1024.0,
+		// 	pm = proc.PagedMemorySize64/1024.0/1024.0,
+		// 	prvm = proc.PrivateMemorySize64/1024.0/1024.0,
+		// 	sm = proc.PagedSystemMemorySize64/1024.0/1024.0
+		// };
+		mainWindowViewModel.Memory = $"Mem: {proc.PrivateMemorySize64 / 1024.0 / 1024.0:F2}MB";
+	}
+
 	private static void AddCommonServices()
 	{
 		var dataLocation = Path.Join(AppContext.BaseDirectory, "data");
 		Directory.CreateDirectory(dataLocation);
-		
-		Locator.CurrentMutable.RegisterConstant<TimeTrackerRepository>(new TimeTrackerRepository(Path.Join(dataLocation,"app.db")));
+
+		Locator.CurrentMutable.RegisterConstant<TimeTrackerRepository>(new TimeTrackerRepository(Path.Join(dataLocation, "app.db")));
 		Locator.CurrentMutable.RegisterConstant<TimeManager>(new TimeManager(GetOrThrowOnServiceNull<TimeTrackerRepository>()));
 	}
 

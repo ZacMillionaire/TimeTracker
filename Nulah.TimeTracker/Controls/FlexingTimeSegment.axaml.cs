@@ -57,6 +57,7 @@ public partial class FlexingTimeSegment : UserControl
 	}
 
 
+	// TODO: wrap this in another controller that passes in the boundary once it gets it maybe?
 	protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
 	{
 		base.OnPropertyChanged(change);
