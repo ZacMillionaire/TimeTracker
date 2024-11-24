@@ -67,7 +67,7 @@ public class DateViewDesignModel : DateViewModel
 		TimeEntrySummaries = Enumerable.Range(0, 7)
 			.Select(x => new SummarisedTimeEntryDto
 			{
-				Date = new DateOnly(DateTime.Now.Year, DateTime.Now.Month, x + 1),
+				Date = new DateTime(DateTime.Now.Year, DateTime.Now.Month, x + 1),
 				Summaries = Enumerable.Range(0, r.Next(1, 7))
 					.Select(y => new TimeEntrySummaryDto()
 					{
@@ -83,7 +83,7 @@ public class DateViewDesignModel : DateViewModel
 			})
 			.ToList();
 
-		Selected = TimeEntrySummaries.First().Summaries.Select((x, i) => new TimeEntryDto()
+		SelecteDateTimeEntries = TimeEntrySummaries.First().Summaries.Select((x, i) => new TimeEntryDto()
 			{
 				Name = $"Name {i}",
 				Description = descriptions[r.Next(0, descriptions.Count)],
@@ -98,7 +98,8 @@ public class DateViewDesignModel : DateViewModel
 public class DateViewModel : ViewModelBase
 {
 	private List<SummarisedTimeEntryDto> _timeEntrySummaries;
-	private List<TimeEntryDto> _selected;
+	private List<TimeEntryDto> _selecteDateTimeEntries;
+	private SummarisedTimeEntryDto _selectedTimeSummary;
 
 	public List<SummarisedTimeEntryDto> TimeEntrySummaries
 	{
@@ -106,10 +107,16 @@ public class DateViewModel : ViewModelBase
 		set => this.RaiseAndSetIfChanged(ref _timeEntrySummaries, value);
 	}
 
-	public List<TimeEntryDto> Selected
+	public List<TimeEntryDto> SelecteDateTimeEntries
 	{
-		get => _selected;
-		protected set => this.RaiseAndSetIfChanged(ref _selected, value);
+		get => _selecteDateTimeEntries;
+		protected set => this.RaiseAndSetIfChanged(ref _selecteDateTimeEntries, value);
+	}
+
+	public SummarisedTimeEntryDto SelectedTimeSummary
+	{
+		get => _selectedTimeSummary;
+		set => this.RaiseAndSetIfChanged(ref _selectedTimeSummary, value);
 	}
 
 	public ReactiveCommand<SummarisedTimeEntryDto, Unit> SelectDateCommand { get; private set; }
@@ -136,7 +143,9 @@ public class DateViewModel : ViewModelBase
 			Dispatcher.UIThread.Invoke(() =>
 			{
 				TimeEntrySummaries = _timeManager.GetEntrySummary();
-				Selected = GetTimeEntriesForDate(DateTimeOffset.Now.Date, _timeManager);
+				// TODO: change this to null and handle the first time use having no time entries added
+				SelectedTimeSummary = TimeEntrySummaries.LastOrDefault() ?? new();
+				SelecteDateTimeEntries = GetTimeEntriesForDate(DateTimeOffset.Now.Date, _timeManager);
 			});
 		}
 	}
@@ -147,7 +156,8 @@ public class DateViewModel : ViewModelBase
 		{
 			Dispatcher.UIThread.Invoke(() =>
 			{
-				Selected = GetTimeEntriesForDate(new DateTimeOffset(summarisedTimeEntryDto.Date, TimeOnly.MinValue, DateTimeOffset.Now.Offset), _timeManager);
+				SelectedTimeSummary = summarisedTimeEntryDto;
+				SelecteDateTimeEntries = GetTimeEntriesForDate(new DateTimeOffset(summarisedTimeEntryDto.Date, DateTimeOffset.Now.Offset), _timeManager);
 			});
 		}
 	}
@@ -158,6 +168,31 @@ public class DateViewModel : ViewModelBase
 		{
 			Dispatcher.UIThread.Invoke(() =>
 			{
+				if (SelectedTimeSummary.Date != createdTimeEntry.Start.Date)
+				{
+					var matchingTimeSummary = TimeEntrySummaries
+						.FirstOrDefault(x => x.Date == createdTimeEntry.Start.Date);
+
+					if (matchingTimeSummary != null)
+					{
+						SelectedTimeSummary = matchingTimeSummary;
+						SelecteDateTimeEntries = GetTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
+						// Refresh the summaries as we're already in the loaded set
+						// TODO: have this simply update the relevant matching time summary and insert/remove/update the relevant time summary
+						TimeEntrySummaries = _timeManager.GetEntrySummary();
+					}
+					else
+					{
+						throw new NotImplementedException("TODO: perform a new summary query with a date range that has the start date in the middle");
+					}
+				}
+				else
+				{
+					SelecteDateTimeEntries = GetTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
+					// Refresh the summaries as we're already in the loaded set
+					// TODO: have this simply update the relevant matching time summary and insert/remove/update the relevant time summary
+					TimeEntrySummaries = _timeManager.GetEntrySummary();
+				}
 			});
 		}
 	}
@@ -177,8 +212,9 @@ public class DateViewModel : ViewModelBase
 			To = new DateTimeOffset(DateOnly.FromDateTime(date.Date), new TimeOnly(23, 59), date.Offset),
 		});
 
+		// TODO: make sure these are ordering correctly by start, eg, PM times are at the bottom
 		return timeEntries
-			.OrderByDescending(x => x.Start)
+			.OrderBy(x => x.Start)
 			.ToList();
 	}
 }

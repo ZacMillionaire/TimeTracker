@@ -76,7 +76,7 @@ public class TimeTrackerRepository
 			.GroupBy(x => x.Start.Date)
 			.Select(x => new SummarisedTimeEntryDto
 			{
-				Date = DateOnly.FromDateTime(x.Key),
+				Date = x.Key,
 				Summaries = x.Select(y => new TimeEntrySummaryDto()
 					{
 						Colour = y.Colour,
@@ -177,7 +177,7 @@ public class TimeTrackerRepository
 
 public class SummarisedTimeEntryDto
 {
-	public DateOnly Date { get; set; }
+	public DateTime Date { get; set; }
 	public List<TimeEntrySummaryDto> Summaries { get; set; } = [];
 
 	public TimeSpan Duration => new(

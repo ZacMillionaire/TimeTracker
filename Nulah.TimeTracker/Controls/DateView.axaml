@@ -67,7 +67,7 @@
         <!-- end header date group -->
         <!-- time entries for selected date -->
         <Grid Grid.Row="1">
-            <ItemsControl ItemsSource="{Binding Selected}">
+            <ItemsControl ItemsSource="{Binding SelecteDateTimeEntries}">
                 <ItemsControl.Template>
                     <ControlTemplate>
                         <ScrollViewer>
