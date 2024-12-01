@@ -99,7 +99,7 @@ public class DateViewModel : ViewModelBase
 				// TODO: maybe filter out summaries with duration under a certain time that would be too small to see
 				// Under 15 min if we have more than 5 entries maybe? Hard to determine what should/shouldn't be culled
 
-				GetTimeEntrySummariesForRange(DateTimeOffset.Now.Date.AddDays(-3), DateTimeOffset.Now.Date.AddDays(4), _timeManager);
+				SelectWeekFromDate(DateTimeOffset.Now);
 
 				// TODO: change this to null and handle the first time use having no time entries added
 				SelectedTimeSummary = TimeEntrySummaries.LastOrDefault() ?? new();
