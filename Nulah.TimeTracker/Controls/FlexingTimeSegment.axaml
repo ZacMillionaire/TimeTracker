@@ -6,12 +6,14 @@
              xmlns:converters="clr-namespace:Nulah.TimeTracker.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Nulah.TimeTracker.Controls.FlexingTimeSegment"
-             x:DataType="controls:FlexingTimeSegment">
+             x:DataType="controls:FlexingTimeSegment"
+             Name="FlexingTimeSegmentContainer">
     <UserControl.Resources>
         <converters:ColourConverter x:Key="ColourConverter" />
     </UserControl.Resources>
     <StackPanel>
         <Border
+            Height="{Binding Height, ElementName=FlexingTimeSegmentContainer}"
             IsVisible="{Binding TimeEntrySummary.Duration, 
                 RelativeSource={RelativeSource FindAncestor, AncestorType=controls:FlexingTimeSegment}, 
                 Converter={x:Static ObjectConverters.IsNotNull}
@@ -22,8 +24,7 @@
             }"
             Width="{Binding DisplayWidth,
                 RelativeSource={RelativeSource FindAncestor, AncestorType=controls:FlexingTimeSegment}
-            }"
-            Height="10">
+            }">
         </Border>
     </StackPanel>
 </UserControl>

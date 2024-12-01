@@ -292,22 +292,28 @@ public class DateViewDesignModel : DateViewModel
 			.ToList();
 
 		TimeEntrySummaries = Enumerable.Range(0, 7)
-			.Select(x => new SummarisedTimeEntryDto
-			{
-				Date = new DateTime(DateTime.Now.Year, DateTime.Now.Month, x + 1),
-				Summaries = Enumerable.Range(0, r.Next(1, 7))
-					.Select(y => new TimeEntrySummaryDto()
-					{
-						Duration = DateTimeOffset.Now.Add(TimeSpan.FromHours(r.Next(1, 2))) - DateTimeOffset.Now.Add(TimeSpan.FromHours(-1 * r.Next(0, 3))),
-						Colour = Color.FromRgb(
-								(byte)r.Next(0, 255),
-								(byte)r.Next(0, 255),
-								(byte)r.Next(0, 255)
-							)
-							.ToUInt32()
-					})
-					.ToList()
-			})
+			.Select(x => x == 2
+				// Show one entry as empty
+				? new SummarisedTimeEntryDto()
+				{
+					Date = new DateTime(DateTime.Now.Year, DateTime.Now.Month, x + 1),
+				}
+				: new SummarisedTimeEntryDto
+				{
+					Date = new DateTime(DateTime.Now.Year, DateTime.Now.Month, x + 1),
+					Summaries = Enumerable.Range(0, r.Next(1, 7))
+						.Select(y => new TimeEntrySummaryDto()
+						{
+							Duration = DateTimeOffset.Now.Add(TimeSpan.FromHours(r.Next(1, 2))) - DateTimeOffset.Now.Add(TimeSpan.FromHours(-1 * r.Next(0, 3))),
+							Colour = Color.FromRgb(
+									(byte)r.Next(0, 255),
+									(byte)r.Next(0, 255),
+									(byte)r.Next(0, 255)
+								)
+								.ToUInt32()
+						})
+						.ToList()
+				})
 			.ToList();
 
 		SelectedDateTimeEntries = TimeEntrySummaries.First().Summaries.Select((x, i) => new TimeEntryDto()
