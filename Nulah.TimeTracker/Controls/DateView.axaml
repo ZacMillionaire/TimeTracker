@@ -11,9 +11,16 @@
     <Design.DataContext>
         <controls:DateViewDesignModel />
     </Design.DataContext>
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,Auto,*">
+        <Button  Grid.Row="0" Content="Select week by date" x:Name="WeekSelectorButton">
+            <Button.Flyout>
+                <Flyout>
+                    <Calendar SelectedDatesChanged="Calendar_OnSelectedDatesChanged" x:Name="WeekPicker"/>
+                </Flyout>
+            </Button.Flyout>
+        </Button>
         <!-- header date group -->
-        <Border Grid.Row="0" BorderBrush="#EBEBEB" BorderThickness="0,0,0,1">
+        <Border Grid.Row="1" BorderBrush="#EBEBEB" BorderThickness="0,0,0,1">
             <ItemsControl ItemsSource="{Binding TimeEntrySummaries}">
                 <ItemsControl.Styles>
                     <Style Selector="ContentPresenter > Border#DateParent">
@@ -66,8 +73,8 @@
         </Border>
         <!-- end header date group -->
         <!-- time entries for selected date -->
-        <Grid Grid.Row="1">
-            <ItemsControl ItemsSource="{Binding SelecteDateTimeEntries}">
+        <Grid Grid.Row="2">
+            <ItemsControl ItemsSource="{Binding SelectedDateTimeEntries}">
                 <ItemsControl.Template>
                     <ControlTemplate>
                         <ScrollViewer>

@@ -39,7 +39,6 @@ public class TimeManager
 	public List<SummarisedTimeEntryDto> GetEntrySummary(TimeEntryQueryCriteria? timeEntryQueryCriteria = null)
 	{
 		return _timeTrackerRepository.GetEntrySummaries(timeEntryQueryCriteria);
-
 	}
 
 	public List<TimeEntryDto> GetEntries(TimeEntryQueryCriteria? timeEntryQueryCriteria = null)

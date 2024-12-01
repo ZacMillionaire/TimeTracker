@@ -77,7 +77,8 @@ public class TimeTrackerRepository
 			.Select(x => new SummarisedTimeEntryDto
 			{
 				Date = x.Key,
-				Summaries = x.Select(y => new TimeEntrySummaryDto()
+				Summaries = x.OrderBy(x => x.Start)
+					.Select(y => new TimeEntrySummaryDto()
 					{
 						Colour = y.Colour,
 						Duration = y.End - y.Start
