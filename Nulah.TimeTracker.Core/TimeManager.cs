@@ -50,6 +50,11 @@ public class TimeManager
 	{
 		return _timeTrackerRepository.GetEntry(timeEntryId);
 	}
+
+	public List<TimeEntrySearchAggregatedSuggestion> GetAggregatedSearchSuggestions(string? searchTerm)
+	{
+		return _timeTrackerRepository.GetAggregatedSearchSuggestions(searchTerm);
+	}
 }
 
 public class TimeEntryCreateResponse

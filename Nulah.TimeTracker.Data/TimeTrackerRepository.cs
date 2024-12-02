@@ -114,6 +114,30 @@ public class TimeTrackerRepository
 			: MapToDto(timeEntry);
 	}
 
+	public List<TimeEntrySearchAggregatedSuggestion> GetAggregatedSearchSuggestions(string? searchTerm)
+	{
+		var criteria = new TimeEntryQueryCriteria()
+		{
+			TaskName = searchTerm
+		};
+
+		var connection = GetConnection();
+		var matchingEntries = connection.Table<TimeEntry>()
+			.Where(BuildTransactionQuery(criteria))
+			.GroupBy(x => new {x.Colour, x.Name})
+			.Select(x => new TimeEntrySearchAggregatedSuggestion()
+			{
+				Colour = x.Key.Colour,
+				Name = x.Key.Name,
+				Descriptions = x.Where(y => !string.IsNullOrWhiteSpace(y.Description))
+					.Select(y => y.Description!)
+					.Take(5)
+					.ToList()
+			});
+
+		return matchingEntries.ToList();
+	}
+
 	private TimeEntryDto MapToDto(TimeEntry newEntry)
 	{
 		return new TimeEntryDto()

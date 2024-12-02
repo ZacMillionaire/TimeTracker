@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
@@ -15,7 +14,6 @@ using Avalonia.Threading;
 using Nulah.TimeTracker.Core;
 using Nulah.TimeTracker.Domain.Models;
 using ReactiveUI;
-using ReactiveUI.Validation.Contexts;
 using ReactiveUI.Validation.Extensions;
 using ReactiveUI.Validation.States;
 using Splat;
@@ -101,7 +99,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 
 	public Color? Colour
 	{
-		get => _colour;
+		get => _colour ?? Colors.Transparent;
 		set => this.RaiseAndSetIfChanged(ref _colour, value);
 	}
 
@@ -113,18 +111,22 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 	public Action<TimeEntryDto> TimeEntryCreated = actionedTimeEntry =>
 	{
 	};
-	
+
 	public Action<TimeEntryDto?> TimeEntryActioned = actionedTimeEntry =>
 	{
 	};
 
 	readonly ObservableAsPropertyHelper<TimeSpan?> _duration;
 	public TimeSpan? Duration => _duration.Value;
+	public Func<string?, CancellationToken, Task<IEnumerable<object>>>? SearchForEntries { get; init; }
+
 
 	public TimeEntryCreateEditViewModel(TimeManager? timeManager = null)
 	{
 		_timeManager = timeManager ?? Locator.Current.GetService<TimeManager>();
-		
+
+		SearchForEntries = GetAggregateSearchSuggestions;
+
 		SaveTimeEntryCommand = ReactiveCommand.Create(
 			SaveTimeEntryAsync,
 			this.WhenAnyValue(
@@ -212,15 +214,19 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 		this.ValidationRule(viewmodel => viewmodel.Duration, _startEndValid);
 	}
 
+	private bool _timeEntryLoading;
 
 	public void LoadTimeEntry(int timeEntryId)
 	{
 		if (_timeManager != null)
 		{
-			Dispatcher.UIThread.Invoke( () =>
+			Dispatcher.UIThread.Invoke(() =>
 			{
 				if (_timeManager.GetTimeEntry(timeEntryId) is { } timeEntry)
 				{
+					_timeEntryLoading = true;
+					// TODO: this will trigger the auto combo box to trigger a search when TaskName is set
+					// so find a way to not make that happen
 					_timeEntryId = timeEntry.Id;
 					TaskName = timeEntry.Name;
 					Description = timeEntry.Description;
@@ -230,6 +236,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 					Colour = timeEntry.Colour != null
 						? Color.FromUInt32(timeEntry.Colour.Value)
 						: null;
+					_timeEntryLoading = false;
 				}
 			});
 		}
@@ -254,7 +261,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 		if (ValidationContext.IsValid && _timeManager != null)
 		{
 			IsSaving = true;
-			
+
 			var newEntryDto = new TimeEntryDto()
 			{
 				Name = _taskName!,
@@ -264,7 +271,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 				End = _endTime.HasValue ? _selectedDate!.Value.Date.Add(_endTime!.Value) : null,
 				Colour = Colour?.ToUInt32()
 			};
-			
+
 			if (_timeEntryId == null)
 			{
 				CreateNewEntry(newEntryDto, _timeManager);
@@ -293,7 +300,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 			throw new NotImplementedException("create result failed not implemented");
 		}
 	}
-	
+
 	private void UpdateExistingEntry(TimeEntryDto newEntry, TimeManager timeManager)
 	{
 		var createResult = timeManager.UpdateAsync(newEntry);
@@ -308,7 +315,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 			throw new NotImplementedException("update result failed not implemented");
 		}
 	}
-	
+
 	private void Reset()
 	{
 		_timeEntryId = null;
@@ -318,6 +325,25 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 		TaskName = null;
 		Description = null;
 		Colour = null;
+	}
+
+	private Task<IEnumerable<object>> GetAggregateSearchSuggestions(string? searchString, CancellationToken cancellationToken)
+	{
+		if (_timeManager != null)
+		{
+			if (_timeEntryLoading)
+			{
+				Console.WriteLine("autocomplete ignored due to time entry being loaded");
+
+				return Task.FromResult<IEnumerable<object>>(Array.Empty<object>());
+			}
+
+			Console.WriteLine("Loading autocomplete");
+
+			return Task.FromResult<IEnumerable<object>>(_timeManager.GetAggregatedSearchSuggestions(searchString));
+		}
+
+		return Task.FromResult<IEnumerable<object>>(Array.Empty<object>());
 	}
 }
 
