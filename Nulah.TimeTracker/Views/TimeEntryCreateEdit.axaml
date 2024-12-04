@@ -23,7 +23,9 @@
         <AutoCompleteBox Watermark="Start typing..."
                          Text="{Binding TaskName}"
                          FilterMode="None"
+                         IsTextCompletionEnabled="False"
                          SelectionChanged="AutoCompleteBox_OnSelectionChanged"
+                         ValueMemberBinding="{Binding Name, DataType=models:TimeEntrySearchAggregatedSuggestion}"
                          AsyncPopulator="{Binding SearchForEntries}">
             <AutoCompleteBox.ItemTemplate>
                 <DataTemplate DataType="{x:Type models:TimeEntrySearchAggregatedSuggestion}">

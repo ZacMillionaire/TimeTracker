@@ -1,10 +1,7 @@
-﻿using System.Diagnostics;
-using System.Reactive.Disposables;
-using Avalonia;
+﻿using System.Reactive.Disposables;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Avalonia.ReactiveUI;
+using Nulah.TimeTracker.Domain.Models;
 using Nulah.TimeTracker.ViewModels;
 using ReactiveUI;
 using ReactiveUI.Validation.Extensions;
@@ -28,9 +25,13 @@ public partial class TimeEntryCreateEdit : ReactiveUserControl<TimeEntryCreateEd
 
 	private void AutoCompleteBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
 	{
-		// TODO: implement the checks that sender is an auto complete box, and that the added items of e
-		// has any items, and the first one is an aggregate search suggestion
-		// then send that off to the view model to populate colour and name based on selection
-		// also update autocombo box to bind the the name property on the aggregate search type
+		// TODO: reimplement this as not an auto complete box because it raises selection events once the asyncpopulator
+		// returns.
+		// It's dumb and I don't care to work around it
+		if (sender is AutoCompleteBox && e.AddedItems is [TimeEntrySearchAggregatedSuggestion selectedSuggestion])
+		{
+			ViewModel?.SetNameAndColourFromSelectedSuggestion(selectedSuggestion);
+			e.Handled = true;
+		}
 	}
 }

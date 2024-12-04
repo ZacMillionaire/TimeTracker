@@ -345,6 +345,14 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 
 		return Task.FromResult<IEnumerable<object>>(Array.Empty<object>());
 	}
+
+	public void SetNameAndColourFromSelectedSuggestion(TimeEntrySearchAggregatedSuggestion selectedSuggestion)
+	{
+		TaskName = selectedSuggestion.Name;
+		Colour = selectedSuggestion.Colour != null
+			? Color.FromUInt32(selectedSuggestion.Colour.Value) 
+			: Colors.Transparent;
+	}
 }
 
 /// <summary>
