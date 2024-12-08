@@ -112,7 +112,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 	{
 	};
 
-	public Action<TimeEntryDto?> TimeEntryActioned = actionedTimeEntry =>
+	public Action<TimeEntryDto> TimeEntryActioned = actionedTimeEntry =>
 	{
 	};
 
@@ -350,7 +350,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 	{
 		TaskName = selectedSuggestion.Name;
 		Colour = selectedSuggestion.Colour != null
-			? Color.FromUInt32(selectedSuggestion.Colour.Value) 
+			? Color.FromUInt32(selectedSuggestion.Colour.Value)
 			: Colors.Transparent;
 	}
 }

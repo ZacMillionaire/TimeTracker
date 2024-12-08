@@ -43,11 +43,11 @@ public class MainWindowViewModel : ViewModelBase
 		WindowContent = new TimeEntryCreateEditViewModel()
 		{
 			TimeEntryCreated =  TimeEntryCreated,
-			//TimeEntryActioned = ReloadTimeEntries,
+			TimeEntryActioned = TimeEntryUpdated,
 		};
 
 		DateViewModel = new (){
-			TimeEntrySelected = LoadTimeEntryForEdit
+			TimeEntrySelected = LoadTimeEntryForEdit,
 		};
 	}
 
@@ -56,9 +56,9 @@ public class MainWindowViewModel : ViewModelBase
 		DateViewModel?.TimeEntryCreated(createdTimeEntry);
 	}
 
-	private void ReloadTimeEntries()
+	private void TimeEntryUpdated(TimeEntryDto updatedTimeEntry)
 	{
-		DateViewModel?.GetTimeSummaries();
+		DateViewModel?.UpdateTimeEntry(updatedTimeEntry);
 	}
 
 	private void LoadTimeEntryForEdit(int selectedTimeEntryId)

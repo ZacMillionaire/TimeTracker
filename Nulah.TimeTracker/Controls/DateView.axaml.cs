@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
 using System.Threading;
 using Avalonia.Controls;
-using Avalonia.Media;
 using Avalonia.ReactiveUI;
 using Avalonia.Threading;
+using DynamicData;
 using Nulah.TimeTracker.Core;
 using Nulah.TimeTracker.Data;
 using Nulah.TimeTracker.Data.Criteria;
@@ -47,33 +48,39 @@ public partial class DateView : ReactiveUserControl<DateViewModel>
 	}
 }
 
+// TODO: This class definitely feels like it does too much and I should look at brreaking this up a bit so it triggers
+// updates within time lists rather than their respective and attached view models.
 public class DateViewModel : ViewModelBase
 {
-	private List<SummarisedTimeEntryDto> _timeEntrySummaries;
-	private List<TimeEntryDto> _selectedDateTimeEntries;
-	private SummarisedTimeEntryDto _selectedTimeSummary;
-	private Dictionary<int, TimeEntryDto> _selectedDateTimeEntriesIndex = new();
+	private List<SummarisedTimeEntryViewModel> _timeEntrySummaries;
+	private SummarisedTimeEntryViewModel? _selectedTimeSummary;
 
-	public List<SummarisedTimeEntryDto> TimeEntrySummaries
+	/// <summary>
+	/// Maintains the source for time entries for the selected date
+	/// </summary>
+	private readonly SourceCache<TimeEntryDto, int> _selectedDateTimeEntriesCache = new(x => x.Id);
+
+	/// <summary>
+	/// Backing field for <see cref="SelectedDateTimeEntries"/> bound within the constructor from <see cref="_selectedDateTimeEntriesCache"/>
+	/// </summary>
+	private readonly ReadOnlyObservableCollection<TimeEntryDto> _selectedDateTimeEntriesBinding;
+
+	public ReadOnlyObservableCollection<TimeEntryDto> SelectedDateTimeEntries => _selectedDateTimeEntriesBinding;
+
+	public List<SummarisedTimeEntryViewModel> TimeEntrySummaries
 	{
 		get => _timeEntrySummaries;
 		set => this.RaiseAndSetIfChanged(ref _timeEntrySummaries, value);
 	}
 
-	public List<TimeEntryDto> SelectedDateTimeEntries
-	{
-		get => _selectedDateTimeEntries;
-		protected set => this.RaiseAndSetIfChanged(ref _selectedDateTimeEntries, value);
-	}
-
-	// todo change this to a datetime as we don't use it in the xaml
-	public SummarisedTimeEntryDto SelectedTimeSummary
+	// todo change this to a datetime as we don't use it in the xaml and probably private
+	public SummarisedTimeEntryViewModel? SelectedTimeSummary
 	{
 		get => _selectedTimeSummary;
 		set => this.RaiseAndSetIfChanged(ref _selectedTimeSummary, value);
 	}
 
-	public ReactiveCommand<SummarisedTimeEntryDto, Unit> SelectDateCommand { get; private set; }
+	public ReactiveCommand<SummarisedTimeEntryViewModel, Unit> SelectDateCommand { get; private set; }
 
 	public Action<int> TimeEntrySelected { get; init; } = (int timeEntryId) =>
 	{
@@ -83,9 +90,13 @@ public class DateViewModel : ViewModelBase
 
 	public DateViewModel(TimeManager? timeManager = null)
 	{
-		SelectDateCommand = ReactiveCommand.Create<SummarisedTimeEntryDto>(DateSelected);
+		SelectDateCommand = ReactiveCommand.Create<SummarisedTimeEntryViewModel>(DateSelected);
 
 		_timeManager = timeManager ?? Locator.Current.GetService<TimeManager>();
+
+		_selectedDateTimeEntriesCache.Connect()
+			.Bind(out _selectedDateTimeEntriesBinding)
+			.Subscribe();
 
 		GetTimeSummaries();
 	}
@@ -102,19 +113,33 @@ public class DateViewModel : ViewModelBase
 				SelectWeekFromDate(DateTimeOffset.Now);
 
 				// TODO: change this to null and handle the first time use having no time entries added
-				SelectedTimeSummary = TimeEntrySummaries.LastOrDefault() ?? new();
+				SelectedTimeSummary = TimeEntrySummaries.LastOrDefault();
 				SetSelectedTimeEntriesForDate(DateTimeOffset.Now.Date, _timeManager);
 			});
 		}
 	}
 
+	/// <summary>
+	/// Loads the time entry summary for the week containing the given date
+	/// </summary>
+	/// <param name="selectedDate"></param>
 	public void SelectWeekFromDate(DateTimeOffset selectedDate)
 	{
 		if (_timeManager != null)
 		{
-			var startOfWeek = GetStartOfWeek(selectedDate);
-			GetTimeEntrySummariesForRange(startOfWeek, startOfWeek.AddDays(7), _timeManager);
+			SelectWeekFromDateInternal(selectedDate, _timeManager);
 		}
+	}
+
+	/// <summary>
+	/// Loads the time entry summary for the week containing the given date
+	/// </summary>
+	/// <param name="date"></param>
+	/// <param name="timeManager"></param>
+	private void SelectWeekFromDateInternal(DateTimeOffset date, TimeManager timeManager)
+	{
+		var startOfWeek = GetStartOfWeek(date);
+		GetTimeEntrySummariesForRange(startOfWeek, startOfWeek.AddDays(7), timeManager);
 	}
 
 	private DateTimeOffset GetStartOfWeek(DateTimeOffset fromDate)
@@ -123,14 +148,21 @@ public class DateViewModel : ViewModelBase
 		return fromDate.AddDays(-1 * diff).Date;
 	}
 
-	private void DateSelected(SummarisedTimeEntryDto summarisedTimeEntryDto)
+	/// <summary>
+	/// Sets <see cref="SelectedTimeSummary"/> to the given value, and if not null, loads all time entries for the given date
+	/// </summary>
+	/// <param name="summarisedTimeEntryViewModel"></param>
+	private void DateSelected(SummarisedTimeEntryViewModel? summarisedTimeEntryViewModel = null)
 	{
 		if (_timeManager != null)
 		{
 			Dispatcher.UIThread.Invoke(() =>
 			{
-				SelectedTimeSummary = summarisedTimeEntryDto;
-				SetSelectedTimeEntriesForDate(new DateTimeOffset(summarisedTimeEntryDto.Date, DateTimeOffset.Now.Offset), _timeManager);
+				SelectedTimeSummary = summarisedTimeEntryViewModel;
+				if (summarisedTimeEntryViewModel != null)
+				{
+					SetSelectedTimeEntriesForDate(new DateTimeOffset(summarisedTimeEntryViewModel.SummarisedTimeEntryDto.Date, DateTimeOffset.Now.Offset), _timeManager);
+				}
 			});
 		}
 	}
@@ -141,62 +173,77 @@ public class DateViewModel : ViewModelBase
 		{
 			Dispatcher.UIThread.Invoke(() =>
 			{
-				if (SelectedTimeSummary.Date != createdTimeEntry.Start.Date)
+				// Is the current selected time date the same as time entry we just created
+				if (SelectedTimeSummary != null && SelectedTimeSummary.SummarisedTimeEntryDto.Date != createdTimeEntry.Start.Date)
 				{
+					// Do we have a time entry summary for this date loaded?
 					var matchingTimeSummary = TimeEntrySummaries
-						.FirstOrDefault(x => x.Date == createdTimeEntry.Start.Date);
+						.FirstOrDefault(x => x.SummarisedTimeEntryDto.Date == createdTimeEntry.Start.Date);
 
+					// If we do, set the selected time summary to the existing one
 					if (matchingTimeSummary != null)
 					{
 						SelectedTimeSummary = matchingTimeSummary;
 						// Refresh the summaries as we're already in the loaded set
 						SetSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
 
+						// currently this refreshes the entire week summary for the created entry date
+						// TODO: move time entry summaries to the same as selected date time entries and use a source cache
 						// TODO: have this simply update the relevant matchingTimeSummary and insert/remove/update the relevant time summary
 						// TODO: update GetTimeEntrySummariesForRange to update indexes and replace this line with a refresh on a single summary by getting the summary for that single date
-						TimeEntrySummaries = _timeManager.GetEntrySummary();
+						// TODO: definitely change this to a source cache now that I'm also creating view models around the dtos
+						// TODO: have this simply update the relevant matching time summary and insert/remove/update the relevant time summary
+						// TODO: same as above, update this once backed by a source cache
+						SelectWeekFromDateInternal(createdTimeEntry.Start, _timeManager);
 					}
 					else
 					{
 						// we don't have the current date loaded, either it's a new date entry outside of our range
 						// or a date very far in the future.
-						// Either way at this stage we should have at least 1 entry for the given date, so we select a spread
-						// around the incoming entry and effectively reload the summaries
-						GetTimeEntrySummariesForRange(
-							createdTimeEntry.Start.Date.AddDays(-3),
-							createdTimeEntry.Start.Date.AddDays(4),
-							_timeManager
-						);
+						SelectWeekFromDateInternal(createdTimeEntry.Start, _timeManager);
+						// Load the time entries for the date of the created time entry
+						SetSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
 
+						// Set the selected time summary
 						SelectedTimeSummary = TimeEntrySummaries
-							.First(x => x.Date == createdTimeEntry.Start.Date);
+							.First(x => x.SummarisedTimeEntryDto.Date == createdTimeEntry.Start.Date);
 					}
 				}
 				else
 				{
+					// We created a time entry for the current selected time summary but for now we reload the entire
+					// day as we may have somehow added in additional dates from elsewhere (the database can be updated
+					// freely currently as we don't hold an exclusive lock on it when the app is running)
 					SetSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
 					// Refresh the summaries as we're already in the loaded set
+					// TODO: move time entry summaries to the same as selected date time entries and use a source cache
+					// TODO: have this simply update the relevant matchingTimeSummary and insert/remove/update the relevant time summary
+					// TODO: update GetTimeEntrySummariesForRange to update indexes and replace this line with a refresh on a single summary by getting the summary for that single date
+					// TODO: definitely change this to a source cache now that I'm also creating view models around the dtos
 					// TODO: have this simply update the relevant matching time summary and insert/remove/update the relevant time summary
-					TimeEntrySummaries = _timeManager.GetEntrySummary();
+					// TODO: same as above, update this once backed by a source cache
+					SelectWeekFromDateInternal(createdTimeEntry.Start, _timeManager);
 				}
 			});
 		}
 	}
 
 	/// <summary>
-	/// Loads all <see cref="TimeEntryDto"/>'s for the given date into <see cref="SelectedDateTimeEntries"/>, and builds the index
-	/// for each.
+	/// Loads all <see cref="TimeEntryDto"/>'s for the given date into <see cref="_selectedDateTimeEntriesCache"/>.
 	/// </summary>
 	/// <param name="start"></param>
 	/// <param name="timeManager"></param>
 	private void SetSelectedTimeEntriesForDate(DateTimeOffset start, TimeManager timeManager)
 	{
-		SelectedDateTimeEntries = GetTimeEntriesForDate(start, timeManager);
-		if (_selectedDateTimeEntries.Count > 0)
+		// Load the time entries for the given date into the cache
+		_selectedDateTimeEntriesCache.Edit(cache =>
 		{
-			_selectedDateTimeEntriesIndex = _selectedDateTimeEntries.ToDictionary(x => x.Id, x => x);
-			var a = _selectedDateTimeEntries[0].Equals(_selectedDateTimeEntriesIndex[_selectedDateTimeEntries[0].Id]);
-		}
+			// Completely replace the contents of the cache in an edit to (hopefully) only raise a single
+			// property notify.
+			// Or maybe Load doesn't raise property notifies which is why its only available on ISourceUpdater<>?
+			// I have no idea, the DynamicData library has _sweet fuck all_ documentation.
+			cache.Load(GetTimeEntriesForDate(start, timeManager));
+		});
 	}
 
 	/// <summary>
@@ -220,30 +267,39 @@ public class DateViewModel : ViewModelBase
 			.Select(offset =>
 			{
 				var date = start.AddDays(offset);
+				// do we have a time summary returned? If we do return it, otherwise return an empty one
 				if (summaries.FirstOrDefault(x => x.Date == date) is { } matchingSummary)
 				{
-					return matchingSummary;
+					return new SummarisedTimeEntryViewModel(matchingSummary);
 				}
 
-				return new SummarisedTimeEntryDto()
-				{
-					Date = date.Date,
-					Summaries = []
-				};
+				return new SummarisedTimeEntryViewModel(
+					new()
+					{
+						Date = date.Date,
+						Summaries = []
+					}
+				);
 			})
 			.ToList();
 
 		TimeEntrySummaries = populatedSummaries;
 	}
 
-	public void UpdateTimeEntry(TimeEntryDto createdTimeEntry)
+	public void UpdateTimeEntry(TimeEntryDto updatedTimeEntryDto)
 	{
 		Dispatcher.UIThread.Invoke(() =>
 		{
-			// TODO: update similar to how create does
+			_selectedDateTimeEntriesCache.AddOrUpdate(updatedTimeEntryDto);
 		});
 	}
 
+	/// <summary>
+	/// Returns any time entries for the given date, ordered by their start date descending
+	/// </summary>
+	/// <param name="date"></param>
+	/// <param name="timeManager"></param>
+	/// <returns></returns>
 	private List<TimeEntryDto> GetTimeEntriesForDate(DateTimeOffset date, TimeManager timeManager)
 	{
 		var timeEntries = timeManager.GetEntries(new TimeEntryQueryCriteria()
@@ -268,6 +324,8 @@ public class DateViewDesignModel : DateViewModel
 		// 	Selected = selectedDateGroup;
 		// });
 
+		// TODO: fix design mode data
+		/*
 		var r = new Random();
 
 		List<string?> descriptions =
@@ -316,14 +374,17 @@ public class DateViewDesignModel : DateViewModel
 				})
 			.ToList();
 
-		SelectedDateTimeEntries = TimeEntrySummaries.First().Summaries.Select((x, i) => new TimeEntryDto()
+		_selectedDateTimeEntriesCache.Edit(cacheUpdater =>
+		{
+			cacheUpdater.Load(TimeEntrySummaries.First().Summaries.Select((x, i) => new TimeEntryDto()
 			{
 				Name = $"Name {i}",
 				Description = descriptions[r.Next(0, descriptions.Count)],
 				Start = DateTimeOffset.Now.Add(TimeSpan.FromHours(-1)),
 				End = DateTimeOffset.Now.Add(TimeSpan.FromHours(2)),
 				Colour = x.Colour
-			})
-			.ToList();
+			}));
+		});
+		*/
 	}
 }

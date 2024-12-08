@@ -29,4 +29,8 @@
     <ItemGroup>
       <ProjectReference Include="..\Nulah.TimeTracker.Core\Nulah.TimeTracker.Core.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+      <UpToDateCheckInput Remove="Windows\Logger.axaml" />
+    </ItemGroup>
 </Project>

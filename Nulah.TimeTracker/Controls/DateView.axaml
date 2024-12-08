@@ -12,10 +12,10 @@
         <controls:DateViewDesignModel />
     </Design.DataContext>
     <Grid RowDefinitions="Auto,Auto,*">
-        <Button  Grid.Row="0" Content="Select week by date" x:Name="WeekSelectorButton">
+        <Button Grid.Row="0" Content="Select week by date" x:Name="WeekSelectorButton">
             <Button.Flyout>
                 <Flyout>
-                    <Calendar SelectedDatesChanged="Calendar_OnSelectedDatesChanged" x:Name="WeekPicker"/>
+                    <Calendar SelectedDatesChanged="Calendar_OnSelectedDatesChanged" x:Name="WeekPicker" />
                 </Flyout>
             </Button.Flyout>
         </Button>
@@ -48,7 +48,8 @@
                                         CommandParameter="{Binding}" />
                                 </ia:EventTriggerBehavior>
                             </i:Interaction.Behaviors>
-                            <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+                                  DataContext="{Binding SummarisedTimeEntryDto}">
                                 <TextBlock Grid.Row="0"
                                            FontSize="30"
                                            FontWeight="Bold"
