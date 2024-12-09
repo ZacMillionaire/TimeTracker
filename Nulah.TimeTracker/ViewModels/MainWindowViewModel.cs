@@ -26,6 +26,7 @@ public class MainWindowViewModel : ViewModelBase
 	}
 
 	private DateViewModel? _dateViewModel;
+
 	public DateViewModel? DateViewModel
 	{
 		get => _dateViewModel;
@@ -38,15 +39,24 @@ public class MainWindowViewModel : ViewModelBase
 		set => this.RaiseAndSetIfChanged(ref _memory, value);
 	}
 
+	private string? _appVersion;
+
+	public string? AppVersion
+	{
+		get => _appVersion;
+		set => this.RaiseAndSetIfChanged(ref _appVersion, value);
+	}
+
 	public MainWindowViewModel()
 	{
 		WindowContent = new TimeEntryCreateEditViewModel()
 		{
-			TimeEntryCreated =  TimeEntryCreated,
+			TimeEntryCreated = TimeEntryCreated,
 			TimeEntryActioned = TimeEntryUpdated,
 		};
 
-		DateViewModel = new (){
+		DateViewModel = new()
+		{
 			TimeEntrySelected = LoadTimeEntryForEdit,
 		};
 	}
