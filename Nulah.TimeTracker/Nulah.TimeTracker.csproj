@@ -21,11 +21,16 @@
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
         <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.1.0"/>
         <PackageReference Include="Avalonia.ReactiveUI" Version="11.1.0"/>
+        <PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.1.0.7" />
         <PackageReference Include="HeroIcons.Avalonia" Version="1.0.2" />
         <PackageReference Include="ReactiveUI.Validation" Version="4.1.1" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Nulah.TimeTracker.Core\Nulah.TimeTracker.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <UpToDateCheckInput Remove="Windows\Logger.axaml" />
     </ItemGroup>
 </Project>

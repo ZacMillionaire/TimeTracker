@@ -73,7 +73,7 @@
                                             <DataTemplate>
                                                 <StackPanel>
                                                     <controls:FlexingTimeSegment
-                                                        TimeEntry="{Binding}"
+                                                        TimeEntrySummary="{Binding}"
                                                         TotalDuration="{Binding $parent[ItemsControl].((viewModels:DateGroup)DataContext).Duration}"
                                                         TotalBoundary="{Binding Bounds, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}, Mode=FindAncestor}}" />
                                                 </StackPanel>

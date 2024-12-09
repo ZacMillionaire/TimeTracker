@@ -28,7 +28,7 @@ public class TimeTrackerRepository
 			: new Dictionary<int, TimeEntry>();
 	}
 
-	public async Task<TimeEntryDto> CreateAsync(TimeEntryDto newTimeEntry)
+	public TimeEntryDto CreateAsync(TimeEntryDto newTimeEntry)
 	{
 		var newEntry = new TimeEntry()
 		{
@@ -40,16 +40,16 @@ public class TimeTrackerRepository
 		};
 
 		var db = GetConnection();
-		await db.InsertAsync(newEntry);
+		db.Insert(newEntry);
 
 		return MapToDto(newEntry);
 	}
 
-	public async Task<TimeEntryDto?> UpdateAsync(TimeEntryDto newEntry)
+	public TimeEntryDto? UpdateAsync(TimeEntryDto newEntry)
 	{
 		var db = GetConnection();
-		var updatingEntry = await db.Table<TimeEntry>()
-			.FirstOrDefaultAsync(x => x.Id == newEntry.Id);
+		var updatingEntry = db.Table<TimeEntry>()
+			.FirstOrDefault(x => x.Id == newEntry.Id);
 
 		if (updatingEntry == null)
 		{
@@ -62,32 +62,80 @@ public class TimeTrackerRepository
 		updatingEntry.End = newEntry.End;
 		updatingEntry.Colour = newEntry.Colour;
 
-		await db.UpdateAsync(updatingEntry);
+		db.Update(updatingEntry);
 
 		return MapToDto(updatingEntry);
 	}
 
-	public async Task<List<TimeEntryDto>> GetEntries(TimeEntryQueryCriteria? timeEntryQueryCriteria = null)
+	public List<SummarisedTimeEntryDto> GetEntrySummaries(TimeEntryQueryCriteria? timeEntryQueryCriteria = null)
 	{
 		var db = GetConnection();
-		var timeEntries = await db.Table<TimeEntry>()
+
+		var timeEntries = db.Table<TimeEntry>()
 			.Where(BuildTransactionQuery(timeEntryQueryCriteria))
-			.ToListAsync();
+			.GroupBy(x => x.Start.Date)
+			.Select(x => new SummarisedTimeEntryDto
+			{
+				Date = x.Key,
+				Summaries = x.OrderBy(x => x.Start)
+					.Select(y => new TimeEntrySummaryDto()
+					{
+						Colour = y.Colour,
+						Duration = y.End - y.Start
+					})
+					.ToList()
+			})
+			.OrderBy(x => x.Date)
+			.ToList();
+
+		return timeEntries;
+	}
+
+	public List<TimeEntryDto> GetEntries(TimeEntryQueryCriteria? timeEntryQueryCriteria = null)
+	{
+		var db = GetConnection();
+		var timeEntries = db.Table<TimeEntry>()
+			.Where(BuildTransactionQuery(timeEntryQueryCriteria))
+			.ToList();
 
 		return timeEntries
 			.Select(MapToDto)
 			.ToList();
 	}
 
-	public async Task<TimeEntryDto?> GetEntry(int timeEntryId)
+	public TimeEntryDto? GetEntry(int timeEntryId)
 	{
 		var db = GetConnection();
-		var timeEntry = await db.Table<TimeEntry>()
-			.FirstOrDefaultAsync(x => x.Id == timeEntryId);
+		var timeEntry = db.Table<TimeEntry>()
+			.FirstOrDefault(x => x.Id == timeEntryId);
 
 		return timeEntry == null
 			? null
 			: MapToDto(timeEntry);
+	}
+
+	public List<TimeEntrySearchAggregatedSuggestion> GetAggregatedSearchSuggestions(string? searchTerm)
+	{
+		var criteria = new TimeEntryQueryCriteria()
+		{
+			TaskName = searchTerm
+		};
+
+		var connection = GetConnection();
+		var matchingEntries = connection.Table<TimeEntry>()
+			.Where(BuildTransactionQuery(criteria))
+			.GroupBy(x => new {x.Colour, x.Name})
+			.Select(x => new TimeEntrySearchAggregatedSuggestion()
+			{
+				Colour = x.Key.Colour,
+				Name = x.Key.Name,
+				Descriptions = x.Where(y => !string.IsNullOrWhiteSpace(y.Description))
+					.Select(y => y.Description!)
+					.Take(5)
+					.ToList()
+			});
+
+		return matchingEntries.ToList();
 	}
 
 	private TimeEntryDto MapToDto(TimeEntry newEntry)
@@ -107,9 +155,9 @@ public class TimeTrackerRepository
 		};
 	}
 
-	private SQLiteAsyncConnection GetConnection()
+	private SQLiteConnection GetConnection()
 	{
-		return new SQLiteAsyncConnection(_databaseLocation);
+		return new SQLiteConnection(_databaseLocation);
 	}
 
 	/// <summary>
@@ -132,12 +180,12 @@ public class TimeTrackerRepository
 
 		if (timeEntryQueryCriteria.From.HasValue)
 		{
-			baseFunc = baseFunc.And(x => timeEntryQueryCriteria.From.Value.ToUniversalTime() <= x.Start);
+			baseFunc = baseFunc.And(x => timeEntryQueryCriteria.From.Value <= x.Start);
 		}
 
 		if (timeEntryQueryCriteria.To.HasValue)
 		{
-			baseFunc = baseFunc.And(x => x.Start <= timeEntryQueryCriteria.To.Value.ToUniversalTime());
+			baseFunc = baseFunc.And(x => x.Start <= timeEntryQueryCriteria.To.Value);
 		}
 
 		// Return an "empty" expression if we have a criteria object, but no criteria to act on
@@ -150,4 +198,22 @@ public class TimeTrackerRepository
 
 		return baseFunc;
 	}
+}
+
+public class SummarisedTimeEntryDto
+{
+	public DateTime Date { get; set; }
+	public List<TimeEntrySummaryDto> Summaries { get; set; } = [];
+
+	public TimeSpan Duration => new(
+		Summaries
+			.Where(x => x.Duration.HasValue)
+			.Sum(x => x.Duration!.Value.Ticks)
+	);
+}
+
+public class TimeEntrySummaryDto
+{
+	public uint? Colour { get; set; }
+	public TimeSpan? Duration { get; set; }
 }

@@ -1,25 +1,19 @@
 ﻿using System;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Markup.Xaml;
-using Avalonia.Media;
-using Nulah.TimeTracker.Domain.Models;
+using Nulah.TimeTracker.Data;
 
 namespace Nulah.TimeTracker.Controls;
 
 public partial class FlexingTimeSegment : UserControl
 {
-	public static readonly StyledProperty<TimeEntryDto> TimeEntryProperty
-		= AvaloniaProperty.Register<FlexingTimeSegment, TimeEntryDto>(nameof(TimeEntry), new()
-		{
-			Colour = Color.FromRgb(50, 40, 30).ToUInt32()
-		});
+	public static readonly StyledProperty<TimeEntrySummaryDto> TimeEntrySummaryProperty
+		= AvaloniaProperty.Register<FlexingTimeSegment, TimeEntrySummaryDto>(nameof(TimeEntrySummary));
 
-	public TimeEntryDto TimeEntry
+	public TimeEntrySummaryDto TimeEntrySummary
 	{
-		get => GetValue(TimeEntryProperty);
-		set => SetValue(TimeEntryProperty, value);
+		get => GetValue(TimeEntrySummaryProperty);
+		set => SetValue(TimeEntrySummaryProperty, value);
 	}
 
 	public static readonly StyledProperty<TimeSpan> TotalDurationProperty
@@ -62,12 +56,12 @@ public partial class FlexingTimeSegment : UserControl
 	{
 		base.OnPropertyChanged(change);
 
-		if (change.Property != TotalBoundaryProperty || TimeEntry.End == null)
+		if (change.Property != TotalBoundaryProperty || TimeEntrySummary.Duration == null)
 		{
 			return;
 		}
 		
-		var percent = (TimeEntry.End.Value.Ticks - TimeEntry.Start.Ticks) / (double)TotalDuration.Ticks;
+		var percent = TimeEntrySummary.Duration.Value.Ticks / (double)TotalDuration.Ticks;
 		DisplayWidth = percent * TotalBoundary.Right;
 	}
 }

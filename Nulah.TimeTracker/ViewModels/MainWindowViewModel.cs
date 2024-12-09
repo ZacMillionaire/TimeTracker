@@ -1,4 +1,6 @@
 ﻿using System;
+using Nulah.TimeTracker.Controls;
+using Nulah.TimeTracker.Domain.Models;
 using ReactiveUI;
 
 namespace Nulah.TimeTracker.ViewModels;
@@ -7,17 +9,14 @@ public class MainWindowViewModelDesignTime : MainWindowViewModel
 {
 	public MainWindowViewModelDesignTime()
 	{
-		TimeEntryListViewModel = new TimeEntryListViewModelDesignTime();
 		WindowContent = new TimeEntryCreateEditViewModel();
 		Memory = "123.4MB";
-		Console.WriteLine("design view");
 	}
 }
 
 public class MainWindowViewModel : ViewModelBase
 {
 	private ReactiveObject? _windowContent;
-	private TimeEntryListViewModel? _timeEntryListViewModel;
 	private string? _memory;
 
 	public ReactiveObject? WindowContent
@@ -26,10 +25,11 @@ public class MainWindowViewModel : ViewModelBase
 		set => this.RaiseAndSetIfChanged(ref _windowContent, value);
 	}
 
-	public TimeEntryListViewModel? TimeEntryListViewModel
+	private DateViewModel? _dateViewModel;
+	public DateViewModel? DateViewModel
 	{
-		get => _timeEntryListViewModel;
-		set => this.RaiseAndSetIfChanged(ref _timeEntryListViewModel, value);
+		get => _dateViewModel;
+		set => this.RaiseAndSetIfChanged(ref _dateViewModel, value);
 	}
 
 	public string? Memory
@@ -42,18 +42,23 @@ public class MainWindowViewModel : ViewModelBase
 	{
 		WindowContent = new TimeEntryCreateEditViewModel()
 		{
-			TimeEntryCreated = ReloadTimeEntries
+			TimeEntryCreated =  TimeEntryCreated,
+			TimeEntryActioned = TimeEntryUpdated,
 		};
 
-		TimeEntryListViewModel = new TimeEntryListViewModel()
-		{
-			TimeEntrySelected = LoadTimeEntryForEdit
+		DateViewModel = new (){
+			TimeEntrySelected = LoadTimeEntryForEdit,
 		};
 	}
 
-	private void ReloadTimeEntries(int createdTask)
+	private void TimeEntryCreated(TimeEntryDto createdTimeEntry)
 	{
-		TimeEntryListViewModel?.GetTimeEntries();
+		DateViewModel?.TimeEntryCreated(createdTimeEntry);
+	}
+
+	private void TimeEntryUpdated(TimeEntryDto updatedTimeEntry)
+	{
+		DateViewModel?.UpdateTimeEntry(updatedTimeEntry);
 	}
 
 	private void LoadTimeEntryForEdit(int selectedTimeEntryId)

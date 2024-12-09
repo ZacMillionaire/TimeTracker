@@ -13,6 +13,7 @@ public partial class TimeEntryList : ReactiveUserControl<TimeEntryListViewModel>
 		InitializeComponent();
 	}
 
+	// TODO: rename this to make sense in the new context
 	private void ToggleExpandDateGroup(object? sender, PointerReleasedEventArgs e)
 	{
 		if (sender is StyledElement { DataContext: DateGroup dateGroup })
