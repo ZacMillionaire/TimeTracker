@@ -73,11 +73,11 @@ public class TimeTrackerRepository
 
 		var timeEntries = db.Table<TimeEntry>()
 			.Where(BuildTransactionQuery(timeEntryQueryCriteria))
-			.GroupBy(x => x.Start.Date)
+			.GroupBy(x => x.Start.ToLocalTime().Date)
 			.Select(x => new SummarisedTimeEntryDto
 			{
 				Date = x.Key,
-				Summaries = x.OrderBy(x => x.Start)
+				Summaries = x.OrderBy(y => y.Start)
 					.Select(y => new TimeEntrySummaryDto()
 					{
 						Colour = y.Colour,
