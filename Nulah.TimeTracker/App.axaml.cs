@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -34,10 +35,13 @@ public partial class App : Application
 		{
 			desktop.MainWindow = new MainWindow
 			{
-				DataContext = new MainWindowViewModel(),
+				DataContext = new MainWindowViewModel()
+				{
+					AppVersion = GetVersion(),
+				},
 			};
 
-			GetMemoryUsage(null, EventArgs.Empty);
+			GetMemoryUsage(desktop.MainWindow.DataContext, EventArgs.Empty);
 
 			_diagnosticTimer = new DispatcherTimer
 			{
@@ -49,7 +53,6 @@ public partial class App : Application
 
 		base.OnFrameworkInitializationCompleted();
 	}
-
 
 	private void GetMemoryUsage(object? sender, EventArgs e)
 	{
@@ -68,6 +71,11 @@ public partial class App : Application
 		// 	sm = proc.PagedSystemMemorySize64/1024.0/1024.0
 		// };
 		mainWindowViewModel.Memory = $"Mem: {proc.PrivateMemorySize64 / 1024.0 / 1024.0:F2}MB";
+	}
+
+	private string? GetVersion()
+	{
+		return FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
 	}
 
 	private static void AddCommonServices()

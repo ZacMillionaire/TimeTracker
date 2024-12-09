@@ -30,8 +30,9 @@
                 </ContentControl.DataTemplates>
             </ContentControl>
         </ScrollViewer>
-        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Right">
+        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="5" HorizontalAlignment="Right" Orientation="Horizontal">
             <TextBlock Text="{Binding Memory}" FontSize="10"/>
+            <TextBlock Foreground="DarkGray" Text="{Binding AppVersion}" FontSize="10"/>
         </StackPanel>
     </Grid>
 

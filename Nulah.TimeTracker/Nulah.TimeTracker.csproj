@@ -6,6 +6,9 @@
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <AssemblyVersion>0.0.2</AssemblyVersion>
+        <FileVersion>0.0.2</FileVersion>
+        <Version>0.0.2</Version>
     </PropertyGroup>
 
     <ItemGroup>
@@ -28,9 +31,5 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Nulah.TimeTracker.Core\Nulah.TimeTracker.Core.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <UpToDateCheckInput Remove="Windows\Logger.axaml" />
     </ItemGroup>
 </Project>
