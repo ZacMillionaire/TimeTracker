@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
 using System.Threading;
-using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
@@ -38,30 +37,18 @@ public partial class DateView : ReactiveUserControl<DateViewModel>
 		}
 	}
 
-	private async void WeekPicker_OnSelectedDatesChanged(object? sender, SelectionChangedEventArgs e)
+	private void WeekPicker_OnSelectedDatesChanged(object? sender, SelectionChangedEventArgs e)
 	{
 		if (e.AddedItems.Count > 0 && e.AddedItems[0] is DateTime selectedDate)
 		{
+			// TODO: redesign the UI for this because flyouts with controls feel super buggy.
+			// Might mean recreating a popup for the calendar specifically
 			ViewModel?.LoadWeekFromDate(selectedDate);
-			// TODO: redesign the UI for how the calendar works as I hate how flimsy this feels
-			// "Temporarily" fix the issue with the calendar turning mouse overs into selection changes after the first selection
-			// Steps to reproduce the issue this "fixes":
-			// - replace the task delay with task yield
-			// - debug the app
-			// - click the select week button to display the flyout
-			// - click a date and watch the flyout hide!
-			// - open the calendar again
-			// - oops! all SelectedDatesChanged events!
-			// This is also a similar issue to auto complete because it also uses a flyout.
-			// Temporary in this case probably means permanent, but I can dream.
-			await Task.Delay(100);
-			(Resources["CalendarFlyout"] as Flyout)?.Hide();
 		}
 	}
 
 	private void WeekSelectorButton_OnClick(object? sender, RoutedEventArgs e)
 	{
-		// I hate this fucking flyout fucking up the calendar and making it react to any mouse over as a fucking click
 		(Resources["CalendarFlyout"] as Flyout)?.ShowAt(WeekSummaryContainer);
 	}
 }

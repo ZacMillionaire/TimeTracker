@@ -13,7 +13,7 @@
         <controls:DateViewDesignModel />
     </Design.DataContext>
     <UserControl.Resources>
-        <Flyout x:Key="CalendarFlyout">
+        <Flyout x:Key="CalendarFlyout" ShowMode="Transient">
             <Calendar SelectedDatesChanged="WeekPicker_OnSelectedDatesChanged" x:Name="WeekPicker" />
         </Flyout>
     </UserControl.Resources>
