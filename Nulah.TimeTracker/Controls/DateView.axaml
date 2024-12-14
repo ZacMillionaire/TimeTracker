@@ -38,7 +38,15 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Name="DateParent" Background="Transparent">
+                        <Border Name="DateParent" Classes.IsActive="{Binding Selected}">
+                            <Border.Styles>
+                                <Style Selector="Border">
+                                    <Setter Property="Background" Value="Transparent" />
+                                </Style>
+                                <Style Selector="Border.IsActive">
+                                    <Setter Property="Background" Value="Aqua" />
+                                </Style>
+                            </Border.Styles>
                             <i:Interaction.Behaviors>
                                 <ia:EventTriggerBehavior
                                     EventName="PointerReleased"

@@ -127,7 +127,7 @@ public class DateViewModel : ViewModelBase
 			{
 				LoadWeekFromDate(DateTimeOffset.Now);
 
-				SelectedTimeSummary = LoadedWeekSummaryCache.Lookup(DateTimeOffset.Now.Date).Value;
+				UpdateSelectedSummary(LoadedWeekSummaryCache.Lookup(DateTimeOffset.Now.Date).Value);
 
 				LoadSelectedTimeEntriesForDate(DateTimeOffset.Now.Date, _timeManager);
 			});
@@ -173,7 +173,7 @@ public class DateViewModel : ViewModelBase
 		{
 			Dispatcher.UIThread.Invoke(() =>
 			{
-				SelectedTimeSummary = summarisedTimeEntryViewModel;
+				UpdateSelectedSummary(summarisedTimeEntryViewModel);
 				if (summarisedTimeEntryViewModel != null)
 				{
 					LoadSelectedTimeEntriesForDate(new DateTimeOffset(summarisedTimeEntryViewModel.SummarisedTimeEntryDto.Date, DateTimeOffset.Now.Offset), _timeManager);
@@ -189,7 +189,7 @@ public class DateViewModel : ViewModelBase
 			Dispatcher.UIThread.Invoke(() =>
 			{
 				// Do we have a weekday summary selected, and would it contain our new entry?
-				if (SelectedTimeSummary != null && SelectedTimeSummary.SummarisedTimeEntryDto.Date != createdTimeEntry.Start.Date)
+				if (_selectedTimeSummary != null && _selectedTimeSummary.SummarisedTimeEntryDto.Date != createdTimeEntry.Start.Date)
 				{
 					// The currently selected summary isn't for this time entry, find if any other loaded weekday would contain this time entry
 					var matchingTimeSummary = LoadedWeekSummaryCache.Lookup(createdTimeEntry.Start.Date);
@@ -198,7 +198,7 @@ public class DateViewModel : ViewModelBase
 					if (matchingTimeSummary.HasValue)
 					{
 						// We do so set the selected time summary to the existing one
-						SelectedTimeSummary = matchingTimeSummary.Value;
+						UpdateSelectedSummary(matchingTimeSummary.Value);
 
 						AddOrUpdateEntryInCurrentSelectedDate(createdTimeEntry);
 					}
@@ -213,7 +213,7 @@ public class DateViewModel : ViewModelBase
 						LoadSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
 
 						// Then set the selected time summary
-						SelectedTimeSummary = LoadedWeekSummaryCache.Lookup(createdTimeEntry.Start.Date).Value;
+						UpdateSelectedSummary(LoadedWeekSummaryCache.Lookup(createdTimeEntry.Start.Date).Value);
 					}
 				}
 				else
@@ -250,6 +250,28 @@ public class DateViewModel : ViewModelBase
 				// Refresh the week summary for the selected date
 				UpdateTimeEntrySummaryForDate(timeEntryDto.Start, _timeManager);
 			});
+		}
+	}
+
+	/// <summary>
+	/// Updates the selected weekday summary to the given value, if it is not null,
+	/// also sets <see cref="SummarisedTimeEntryViewModel.Selected"/> to true
+	/// </summary>
+	/// <param name="summarisedTimeEntryViewModel"></param>
+	private void UpdateSelectedSummary(SummarisedTimeEntryViewModel? summarisedTimeEntryViewModel)
+	{
+		// clear the selected state on the previous value
+		if (SelectedTimeSummary != null)
+		{
+			SelectedTimeSummary.Selected = false;
+		}
+
+		SelectedTimeSummary = summarisedTimeEntryViewModel;
+
+		// If we're setting the selected value a not-null value, set selected to true
+		if (SelectedTimeSummary != null)
+		{
+			SelectedTimeSummary.Selected = true;
 		}
 	}
 
