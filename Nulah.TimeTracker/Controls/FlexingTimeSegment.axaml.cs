@@ -7,10 +7,10 @@ namespace Nulah.TimeTracker.Controls;
 
 public partial class FlexingTimeSegment : UserControl
 {
-	public static readonly StyledProperty<TimeEntrySummaryDto> TimeEntrySummaryProperty
-		= AvaloniaProperty.Register<FlexingTimeSegment, TimeEntrySummaryDto>(nameof(TimeEntrySummary));
+	public static readonly StyledProperty<TimeEntrySummaryDto?> TimeEntrySummaryProperty
+		= AvaloniaProperty.Register<FlexingTimeSegment, TimeEntrySummaryDto?>(nameof(TimeEntrySummary));
 
-	public TimeEntrySummaryDto TimeEntrySummary
+	public TimeEntrySummaryDto? TimeEntrySummary
 	{
 		get => GetValue(TimeEntrySummaryProperty);
 		set => SetValue(TimeEntrySummaryProperty, value);
@@ -56,11 +56,13 @@ public partial class FlexingTimeSegment : UserControl
 	{
 		base.OnPropertyChanged(change);
 
-		if (change.Property != TotalBoundaryProperty || TimeEntrySummary.Duration == null)
+		// TODO: this method gets called for every property change so definitely look at how to
+		// improve this so it only gets called once all properties we care about are available
+		if (change.Property != TotalBoundaryProperty || TimeEntrySummary?.Duration == null)
 		{
 			return;
 		}
-		
+
 		var percent = TimeEntrySummary.Duration.Value.Ticks / (double)TotalDuration.Ticks;
 		DisplayWidth = percent * TotalBoundary.Right;
 	}
