@@ -53,7 +53,6 @@ public partial class DateView : ReactiveUserControl<DateViewModel>
 // updates within time lists rather than their respective and attached view models.
 public class DateViewModel : ViewModelBase
 {
-	private List<SummarisedTimeEntryViewModel> _timeEntrySummaries;
 	private SummarisedTimeEntryViewModel? _selectedTimeSummary;
 
 	/// <summary>
@@ -62,17 +61,22 @@ public class DateViewModel : ViewModelBase
 	protected readonly SourceCache<TimeEntryDto, int> SelectedDateTimeEntriesCache = new(x => x.Id);
 
 	/// <summary>
+	/// Maintains the source for the summarised week
+	/// </summary>
+	protected readonly SourceCache<SummarisedTimeEntryViewModel, DateTime> LoadedWeekSummaryCache = new(x => x.SummarisedTimeEntryDto.Date);
+
+	/// <summary>
 	/// Backing field for <see cref="SelectedDateTimeEntries"/> bound within the constructor from <see cref="SelectedDateTimeEntriesCache"/>
 	/// </summary>
 	private readonly ReadOnlyObservableCollection<TimeEntryDto> _selectedDateTimeEntriesBinding;
 
-	public ReadOnlyObservableCollection<TimeEntryDto> SelectedDateTimeEntries => _selectedDateTimeEntriesBinding;
+	/// <summary>
+	/// Backing field for <see cref="TimeEntrySummaries"/> bound within the constructor from <see cref="LoadedWeekSummaryCache"/>
+	/// </summary>
+	private readonly ReadOnlyObservableCollection<SummarisedTimeEntryViewModel> _loadedWeekSummaryBinding;
 
-	public List<SummarisedTimeEntryViewModel> TimeEntrySummaries
-	{
-		get => _timeEntrySummaries;
-		set => this.RaiseAndSetIfChanged(ref _timeEntrySummaries, value);
-	}
+	public ReadOnlyObservableCollection<TimeEntryDto> SelectedDateTimeEntries => _selectedDateTimeEntriesBinding;
+	public ReadOnlyObservableCollection<SummarisedTimeEntryViewModel> TimeEntrySummaries => _loadedWeekSummaryBinding;
 
 	// todo change this to a datetime as we don't use it in the xaml and probably private
 	// TODO: set the active property on this when selected and add styling to it
@@ -100,6 +104,12 @@ public class DateViewModel : ViewModelBase
 			.Connect()
 			.DeferUntilLoaded()
 			.Bind(out _selectedDateTimeEntriesBinding)
+			.Subscribe();
+
+		LoadedWeekSummaryCache
+			.Connect()
+			.DeferUntilLoaded()
+			.Bind(out _loadedWeekSummaryBinding)
 			.Subscribe();
 
 		GetTimeSummaries();
@@ -311,7 +321,10 @@ public class DateViewModel : ViewModelBase
 			})
 			.ToList();
 
-		TimeEntrySummaries = populatedSummaries;
+		LoadedWeekSummaryCache.Edit(cache =>
+		{
+			cache.Load(populatedSummaries);
+		});
 	}
 
 	/// <summary>
@@ -359,24 +372,27 @@ public class DateViewDesignModel : DateViewModel
 			"lmao, lol even Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco"
 		];
 
-		TimeEntrySummaries = Enumerable.Range(0, 7)
-			.Select(x => new SummarisedTimeEntryViewModel(new SummarisedTimeEntryDto
-			{
-				Date = DateTimeOffset.Now.AddDays(-3 + x).Date,
-				Summaries = Enumerable.Range(0, 6)
-					.Select(y => new TimeEntrySummaryDto
-					{
-						Duration = new TimeSpan(0, r.Next(0, 180), 0),
-						Colour = Color.FromRgb(
-							(byte)r.Next(0, 255),
-							(byte)r.Next(0, 255),
-							(byte)r.Next(0, 255)
-						).ToUInt32()
-					})
-					.ToList()
-			}))
-			.ToList();
-
+		LoadedWeekSummaryCache.Edit(cache =>
+		{
+			var pretendSummarisedTimeEntryViewModels = Enumerable.Range(0, 7)
+				.Select(x => new SummarisedTimeEntryViewModel(new SummarisedTimeEntryDto
+				{
+					Date = DateTimeOffset.Now.AddDays(-3 + x).Date,
+					Summaries = Enumerable.Range(0, 6)
+						.Select(y => new TimeEntrySummaryDto
+						{
+							Duration = new TimeSpan(0, r.Next(0, 180), 0),
+							Colour = Color.FromRgb(
+								(byte)r.Next(0, 255),
+								(byte)r.Next(0, 255),
+								(byte)r.Next(0, 255)
+							).ToUInt32()
+						})
+						.ToList()
+				}))
+				.ToList();
+			cache.Load(pretendSummarisedTimeEntryViewModels);
+		});
 
 		SelectedTimeSummary = TimeEntrySummaries.First();
 		SelectedTimeSummary.Selected = true;
