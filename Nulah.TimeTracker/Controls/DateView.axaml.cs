@@ -362,8 +362,10 @@ public class DateViewModel : ViewModelBase
 	/// <param name="timeManager"></param>
 	private void UpdateTimeEntrySummaryForDate(DateTimeOffset date, TimeManager timeManager)
 	{
+		var loadedSummary = LoadedWeekSummaryCache.Lookup(date.Date);
+
 		// Don't attempt to update a summary for a date that isn't loaded.
-		if (!LoadedWeekSummaryCache.Lookup(date.Date).HasValue)
+		if (!loadedSummary.HasValue)
 		{
 			return;
 		}
@@ -383,7 +385,9 @@ public class DateViewModel : ViewModelBase
 		// TODO: do nothing if the date param does not exist in the loaded week summary
 		if (summaries.SingleOrDefault() is { } foundSummary)
 		{
-			LoadedWeekSummaryCache.AddOrUpdate(new SummarisedTimeEntryViewModel(foundSummary));
+			loadedSummary.Value.SummarisedTimeEntryDto.Summaries = foundSummary.Summaries;
+			loadedSummary.Value.Selected = true;
+			LoadedWeekSummaryCache.AddOrUpdate(loadedSummary.Value);
 		}
 	}
 
