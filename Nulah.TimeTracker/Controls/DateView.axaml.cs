@@ -197,10 +197,14 @@ public class DateViewModel : ViewModelBase
 					// If it would, set it to the current selected, and add it to what we have displayed
 					if (matchingTimeSummary.HasValue)
 					{
-						// We do so set the selected time summary to the existing one
+						// Load the time entries for the date we're switching to
+						LoadSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
+						
+						// Update the target summary date to reflect the new entry
+						UpdateTimeEntrySummaryForDate(createdTimeEntry.Start, _timeManager);
+						
+						// Set the selected time summary to the existing one
 						UpdateSelectedSummary(matchingTimeSummary.Value);
-
-						AddOrUpdateEntryInCurrentSelectedDate(createdTimeEntry);
 					}
 					else
 					{
