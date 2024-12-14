@@ -7,20 +7,25 @@
              xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450"
              x:Class="Nulah.TimeTracker.Controls.DateView"
-             x:DataType="controls:DateViewModel">
+             x:DataType="controls:DateViewModel"
+             IsEnabled="{Binding IsEnabled}">
     <Design.DataContext>
         <controls:DateViewDesignModel />
     </Design.DataContext>
+    <UserControl.Resources>
+        <Flyout x:Key="CalendarFlyout" ShowMode="Transient">
+            <StackPanel>
+                <Button Content="Close" x:Name="CloseCalendarFlyout" Click="CloseCalendarFlyout_OnClick"
+                        HorizontalAlignment="Right" />
+                <Calendar SelectedDatesChanged="WeekPicker_OnSelectedDatesChanged" x:Name="WeekPicker" />
+            </StackPanel>
+        </Flyout>
+    </UserControl.Resources>
     <Grid RowDefinitions="Auto,Auto,*">
-        <Button Grid.Row="0" Content="Select week by date" x:Name="WeekSelectorButton">
-            <Button.Flyout>
-                <Flyout>
-                    <Calendar SelectedDatesChanged="Calendar_OnSelectedDatesChanged" x:Name="WeekPicker" />
-                </Flyout>
-            </Button.Flyout>
-        </Button>
+        <Button Grid.Row="0" Content="Select week by date" x:Name="WeekSelectorButton"
+                Click="WeekSelectorButton_OnClick" />
         <!-- header date group -->
-        <Border Grid.Row="1" BorderBrush="#EBEBEB" BorderThickness="0,0,0,1">
+        <Border Grid.Row="1" BorderBrush="#EBEBEB" BorderThickness="0,0,0,1" x:Name="WeekSummaryContainer">
             <ItemsControl ItemsSource="{Binding TimeEntrySummaries}">
                 <ItemsControl.Styles>
                     <Style Selector="ContentPresenter > Border#DateParent">

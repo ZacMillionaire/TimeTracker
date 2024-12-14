@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reactive;
 using System.Threading;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.ReactiveUI;
 using Avalonia.Threading;
@@ -36,17 +37,24 @@ public partial class DateView : ReactiveUserControl<DateViewModel>
 		}
 	}
 
-	private void Calendar_OnSelectedDatesChanged(object? sender, SelectionChangedEventArgs e)
+	private void WeekPicker_OnSelectedDatesChanged(object? sender, SelectionChangedEventArgs e)
 	{
 		if (e.AddedItems.Count > 0 && e.AddedItems[0] is DateTime selectedDate)
 		{
-			// I would love to hide the flyout on click but it breaks the calandar in a way
-			// that then causes any mouse over a date to raise SelectedDatesChanged.
-			// I've no idea if it's a bug or what but whatever I'll deal with this later when/if I give a shit
-			// No combination of e.handled, or dispatching to the UIThread, or sleep threading or whatever will do it.
-			// WeekSelectorButton.Flyout?.Hide();
+			// TODO: redesign the UI for this because flyouts with controls feel super buggy.
+			// Might mean recreating a popup for the calendar specifically
 			ViewModel?.LoadWeekFromDate(selectedDate);
 		}
+	}
+
+	private void WeekSelectorButton_OnClick(object? sender, RoutedEventArgs e)
+	{
+		(Resources["CalendarFlyout"] as Flyout)?.ShowAt(WeekSummaryContainer);
+	}
+
+	private void CloseCalendarFlyout_OnClick(object? sender, RoutedEventArgs e)
+	{
+		(Resources["CalendarFlyout"] as Flyout)?.Hide();
 	}
 }
 
@@ -87,6 +95,14 @@ public class DateViewModel : ViewModelBase
 		set => this.RaiseAndSetIfChanged(ref _selectedTimeSummary, value);
 	}
 
+	private bool _isEnabled = true;
+
+	public bool IsEnabled
+	{
+		get => _isEnabled;
+		set => this.RaiseAndSetIfChanged(ref _isEnabled, value);
+	}
+
 	public ReactiveCommand<SummarisedTimeEntryViewModel, Unit> SelectDateCommand { get; private set; }
 
 	public Action<int> TimeEntrySelected { get; init; } = (int timeEntryId) =>
@@ -125,11 +141,15 @@ public class DateViewModel : ViewModelBase
 		{
 			Dispatcher.UIThread.Invoke(() =>
 			{
+				IsEnabled = false;
+
 				LoadWeekFromDate(DateTimeOffset.Now);
+
+				LoadSelectedTimeEntriesForDate(DateTimeOffset.Now.Date, _timeManager);
 
 				UpdateSelectedSummary(LoadedWeekSummaryCache.Lookup(DateTimeOffset.Now.Date).Value);
 
-				LoadSelectedTimeEntriesForDate(DateTimeOffset.Now.Date, _timeManager);
+				IsEnabled = true;
 			});
 		}
 	}
@@ -142,7 +162,105 @@ public class DateViewModel : ViewModelBase
 	{
 		if (_timeManager != null)
 		{
-			LoadWeekFromDateInternal(selectedDate, _timeManager);
+			Dispatcher.UIThread.Invoke(() =>
+			{
+				IsEnabled = false;
+
+				LoadWeekFromDateInternal(selectedDate, _timeManager);
+				// Load the time entries for the day
+				LoadSelectedTimeEntriesForDate(selectedDate, _timeManager);
+
+				// Then set the selected time summary
+				UpdateSelectedSummary(LoadedWeekSummaryCache.Lookup(selectedDate.Date).Value);
+
+				IsEnabled = true;
+			});
+		}
+	}
+
+	/// <summary>
+	/// Updates the week summary and loaded time entries based on the start date of the created time entry
+	/// </summary>
+	/// <param name="createdTimeEntry"></param>
+	public void TimeEntryCreated(TimeEntryDto createdTimeEntry)
+	{
+		if (_timeManager != null)
+		{
+			Dispatcher.UIThread.Invoke(() =>
+			{
+				IsEnabled = false;
+				// Do we have a weekday summary selected, and would it contain our new entry?
+				if (_selectedTimeSummary != null && _selectedTimeSummary.SummarisedTimeEntryDto.Date != createdTimeEntry.Start.Date)
+				{
+					// The currently selected summary isn't for this time entry, find if any other loaded weekday would contain this time entry
+					var matchingTimeSummary = LoadedWeekSummaryCache.Lookup(createdTimeEntry.Start.Date);
+
+					// If it would, set it to the current selected, and add it to what we have displayed
+					if (matchingTimeSummary.HasValue)
+					{
+						// Load the time entries for the date we're switching to
+						LoadSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
+
+						// Update the target summary date to reflect the new entry
+						UpdateTimeEntrySummaryForDate(createdTimeEntry.Start, _timeManager);
+
+						// Set the selected time summary to the existing one
+						UpdateSelectedSummary(matchingTimeSummary.Value);
+					}
+					else
+					{
+						// We don't have a week for the new time entry loaded, either it's a new date entry outside of our range
+						// or a date very far in the future.
+						// Load the time entries for the date of the created time entry
+						LoadWeekFromDateInternal(createdTimeEntry.Start, _timeManager);
+
+						// Load the time entries for the day
+						LoadSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
+
+						// Then set the selected time summary
+						UpdateSelectedSummary(LoadedWeekSummaryCache.Lookup(createdTimeEntry.Start.Date).Value);
+					}
+				}
+				else
+				{
+					AddOrUpdateEntryInCurrentSelectedDate(createdTimeEntry);
+					// We created a time entry for the current selected time summary but for now we reload the entire
+					// day as we may have somehow added in additional dates from elsewhere (the database can be updated
+					// freely currently as we don't hold an exclusive lock on it when the app is running)
+					UpdateTimeEntrySummaryForDate(createdTimeEntry.Start, _timeManager);
+				}
+
+				IsEnabled = true;
+			});
+		}
+	}
+
+	/// <summary>
+	/// Updates <see cref="SelectedDateTimeEntriesCache"/> based on the incoming <paramref name="timeEntryDto"/>,
+	/// and refreshes the date summary it belongs to.
+	/// <para>
+	///	This method assumes that the updating time entry belongs to the selected summary. If it does not in the future
+	/// then this may cause unintended behaviours and cause the selected summary to drift out of sync
+	/// </para>
+	/// </summary>
+	/// <param name="timeEntryDto"></param>
+	public void UpdateTimeEntry(TimeEntryDto timeEntryDto)
+	{
+		if (_timeManager != null
+		    && _selectedTimeSummary != null
+		    && _selectedTimeSummary.SummarisedTimeEntryDto.Date == timeEntryDto.Start.Date
+		   )
+		{
+			Dispatcher.UIThread.Invoke(() =>
+			{
+				IsEnabled = false;
+
+				SelectedDateTimeEntriesCache.AddOrUpdate(timeEntryDto);
+				// Refresh the week summary for the selected date
+				UpdateTimeEntrySummaryForDate(timeEntryDto.Start, _timeManager);
+
+				IsEnabled = true;
+			});
 		}
 	}
 
@@ -178,81 +296,6 @@ public class DateViewModel : ViewModelBase
 				{
 					LoadSelectedTimeEntriesForDate(new DateTimeOffset(summarisedTimeEntryViewModel.SummarisedTimeEntryDto.Date, DateTimeOffset.Now.Offset), _timeManager);
 				}
-			});
-		}
-	}
-
-	public void TimeEntryCreated(TimeEntryDto createdTimeEntry)
-	{
-		if (_timeManager != null)
-		{
-			Dispatcher.UIThread.Invoke(() =>
-			{
-				// Do we have a weekday summary selected, and would it contain our new entry?
-				if (_selectedTimeSummary != null && _selectedTimeSummary.SummarisedTimeEntryDto.Date != createdTimeEntry.Start.Date)
-				{
-					// The currently selected summary isn't for this time entry, find if any other loaded weekday would contain this time entry
-					var matchingTimeSummary = LoadedWeekSummaryCache.Lookup(createdTimeEntry.Start.Date);
-
-					// If it would, set it to the current selected, and add it to what we have displayed
-					if (matchingTimeSummary.HasValue)
-					{
-						// Load the time entries for the date we're switching to
-						LoadSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
-						
-						// Update the target summary date to reflect the new entry
-						UpdateTimeEntrySummaryForDate(createdTimeEntry.Start, _timeManager);
-						
-						// Set the selected time summary to the existing one
-						UpdateSelectedSummary(matchingTimeSummary.Value);
-					}
-					else
-					{
-						// We don't have a week for the new time entry loaded, either it's a new date entry outside of our range
-						// or a date very far in the future.
-						// Load the time entries for the date of the created time entry
-						LoadWeekFromDateInternal(createdTimeEntry.Start, _timeManager);
-
-						// Load the time entries for the day
-						LoadSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
-
-						// Then set the selected time summary
-						UpdateSelectedSummary(LoadedWeekSummaryCache.Lookup(createdTimeEntry.Start.Date).Value);
-					}
-				}
-				else
-				{
-					AddOrUpdateEntryInCurrentSelectedDate(createdTimeEntry);
-					// We created a time entry for the current selected time summary but for now we reload the entire
-					// day as we may have somehow added in additional dates from elsewhere (the database can be updated
-					// freely currently as we don't hold an exclusive lock on it when the app is running)
-					UpdateTimeEntrySummaryForDate(createdTimeEntry.Start, _timeManager);
-				}
-			});
-		}
-	}
-
-	/// <summary>
-	/// Updates <see cref="SelectedDateTimeEntriesCache"/> based on the incoming <paramref name="timeEntryDto"/>,
-	/// and refreshes the date summary it belongs to.
-	/// <para>
-	///	This method assumes that the updating time entry belongs to the selected summary. If it does not in the future
-	/// then this may cause unintended behaviours and cause the selected summary to drift out of sync
-	/// </para>
-	/// </summary>
-	/// <param name="timeEntryDto"></param>
-	public void UpdateTimeEntry(TimeEntryDto timeEntryDto)
-	{
-		if (_timeManager != null
-		    && _selectedTimeSummary != null
-		    && _selectedTimeSummary.SummarisedTimeEntryDto.Date == timeEntryDto.Start.Date
-		   )
-		{
-			Dispatcher.UIThread.Invoke(() =>
-			{
-				SelectedDateTimeEntriesCache.AddOrUpdate(timeEntryDto);
-				// Refresh the week summary for the selected date
-				UpdateTimeEntrySummaryForDate(timeEntryDto.Start, _timeManager);
 			});
 		}
 	}
