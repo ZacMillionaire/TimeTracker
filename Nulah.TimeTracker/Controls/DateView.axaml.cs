@@ -51,6 +51,11 @@ public partial class DateView : ReactiveUserControl<DateViewModel>
 	{
 		(Resources["CalendarFlyout"] as Flyout)?.ShowAt(WeekSummaryContainer);
 	}
+
+	private void CloseCalendarFlyout_OnClick(object? sender, RoutedEventArgs e)
+	{
+		(Resources["CalendarFlyout"] as Flyout)?.Hide();
+	}
 }
 
 // TODO: This class definitely feels like it does too much and I should look at brreaking this up a bit so it triggers

@@ -14,7 +14,11 @@
     </Design.DataContext>
     <UserControl.Resources>
         <Flyout x:Key="CalendarFlyout" ShowMode="Transient">
-            <Calendar SelectedDatesChanged="WeekPicker_OnSelectedDatesChanged" x:Name="WeekPicker" />
+            <StackPanel>
+                <Button Content="Close" x:Name="CloseCalendarFlyout" Click="CloseCalendarFlyout_OnClick"
+                        HorizontalAlignment="Right" />
+                <Calendar SelectedDatesChanged="WeekPicker_OnSelectedDatesChanged" x:Name="WeekPicker" />
+            </StackPanel>
         </Flyout>
     </UserControl.Resources>
     <Grid RowDefinitions="Auto,Auto,*">
