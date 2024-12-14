@@ -233,6 +233,30 @@ public class DateViewModel : ViewModelBase
 	}
 
 	/// <summary>
+	/// Updates <see cref="SelectedDateTimeEntriesCache"/> based on the incoming <paramref name="updatedTimeEntryDto"/>,
+	/// and refreshes the date summary it belongs to.
+	/// <para>
+	///	This method assumes that the updating time entry belongs to the selected summary. If it does not in the future
+	/// then this may cause unintended behaviours and cause the selected summary to drift out of sync
+	/// </para>
+	/// </summary>
+	/// <param name="updatedTimeEntryDto"></param>
+	public void UpdateTimeEntry(TimeEntryDto updatedTimeEntryDto)
+	{
+		if (_timeManager != null)
+		{
+			Dispatcher.UIThread.Invoke(() =>
+			{
+				// TODO: check that the currently selected summary belongs to the updating time entry. If it doesn't, do not
+				// update the cache
+				SelectedDateTimeEntriesCache.AddOrUpdate(updatedTimeEntryDto);
+				// lazy refresh the date summaries
+				SelectWeekFromDateInternal(updatedTimeEntryDto.Start, _timeManager);
+			});
+		}
+	}
+
+	/// <summary>
 	/// Loads all <see cref="TimeEntryDto"/>'s for the given date into <see cref="SelectedDateTimeEntriesCache"/>.
 	/// </summary>
 	/// <param name="start"></param>
@@ -288,14 +312,6 @@ public class DateViewModel : ViewModelBase
 			.ToList();
 
 		TimeEntrySummaries = populatedSummaries;
-	}
-
-	public void UpdateTimeEntry(TimeEntryDto updatedTimeEntryDto)
-	{
-		Dispatcher.UIThread.Invoke(() =>
-		{
-			SelectedDateTimeEntriesCache.AddOrUpdate(updatedTimeEntryDto);
-		});
 	}
 
 	/// <summary>
