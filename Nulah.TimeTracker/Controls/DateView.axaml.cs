@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reactive;
 using System.Threading;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.ReactiveUI;
 using Avalonia.Threading;
 using DynamicData;
@@ -58,10 +59,10 @@ public class DateViewModel : ViewModelBase
 	/// <summary>
 	/// Maintains the source for time entries for the selected date
 	/// </summary>
-	private readonly SourceCache<TimeEntryDto, int> _selectedDateTimeEntriesCache = new(x => x.Id);
+	protected readonly SourceCache<TimeEntryDto, int> SelectedDateTimeEntriesCache = new(x => x.Id);
 
 	/// <summary>
-	/// Backing field for <see cref="SelectedDateTimeEntries"/> bound within the constructor from <see cref="_selectedDateTimeEntriesCache"/>
+	/// Backing field for <see cref="SelectedDateTimeEntries"/> bound within the constructor from <see cref="SelectedDateTimeEntriesCache"/>
 	/// </summary>
 	private readonly ReadOnlyObservableCollection<TimeEntryDto> _selectedDateTimeEntriesBinding;
 
@@ -74,6 +75,7 @@ public class DateViewModel : ViewModelBase
 	}
 
 	// todo change this to a datetime as we don't use it in the xaml and probably private
+	// TODO: set the active property on this when selected and add styling to it
 	public SummarisedTimeEntryViewModel? SelectedTimeSummary
 	{
 		get => _selectedTimeSummary;
@@ -94,7 +96,9 @@ public class DateViewModel : ViewModelBase
 
 		_timeManager = timeManager ?? Locator.Current.GetService<TimeManager>();
 
-		_selectedDateTimeEntriesCache.Connect()
+		SelectedDateTimeEntriesCache
+			.Connect()
+			.DeferUntilLoaded()
 			.Bind(out _selectedDateTimeEntriesBinding)
 			.Subscribe();
 
@@ -229,14 +233,14 @@ public class DateViewModel : ViewModelBase
 	}
 
 	/// <summary>
-	/// Loads all <see cref="TimeEntryDto"/>'s for the given date into <see cref="_selectedDateTimeEntriesCache"/>.
+	/// Loads all <see cref="TimeEntryDto"/>'s for the given date into <see cref="SelectedDateTimeEntriesCache"/>.
 	/// </summary>
 	/// <param name="start"></param>
 	/// <param name="timeManager"></param>
 	private void SetSelectedTimeEntriesForDate(DateTimeOffset start, TimeManager timeManager)
 	{
 		// Load the time entries for the given date into the cache
-		_selectedDateTimeEntriesCache.Edit(cache =>
+		SelectedDateTimeEntriesCache.Edit(cache =>
 		{
 			// Completely replace the contents of the cache in an edit to (hopefully) only raise a single
 			// property notify.
@@ -290,7 +294,7 @@ public class DateViewModel : ViewModelBase
 	{
 		Dispatcher.UIThread.Invoke(() =>
 		{
-			_selectedDateTimeEntriesCache.AddOrUpdate(updatedTimeEntryDto);
+			SelectedDateTimeEntriesCache.AddOrUpdate(updatedTimeEntryDto);
 		});
 	}
 
@@ -319,13 +323,6 @@ public class DateViewDesignModel : DateViewModel
 {
 	public DateViewDesignModel()
 	{
-		// ReactiveCommand.Create<DateGroup>(selectedDateGroup =>
-		// {
-		// 	Selected = selectedDateGroup;
-		// });
-
-		// TODO: fix design mode data
-		/*
 		var r = new Random();
 
 		List<string?> descriptions =
@@ -338,53 +335,50 @@ public class DateViewDesignModel : DateViewModel
 			"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco"
 		];
 
-		var timeEntries = Enumerable.Range(0, 6)
-			.Select(x => new TimeEntryDto()
-			{
-				Name = $"Name {x}",
-				Description = "test text test text test text test text test text test text",
-				Start = DateTimeOffset.Now.Add(TimeSpan.FromHours(-1)),
-				End = DateTimeOffset.Now.Add(TimeSpan.FromHours(2)),
-				Colour = Color.FromRgb((byte)(1 + x * 50), (byte)(1 + x * 30), (byte)(1 + x * 10)).ToUInt32()
-			})
-			.ToList();
+		List<string> names =
+		[
+			"short name",
+			"a",
+			"somewhat longer name but not that long",
+			"lmao, lol even Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco"
+		];
 
 		TimeEntrySummaries = Enumerable.Range(0, 7)
-			.Select(x => x == 2
-				// Show one entry as empty
-				? new SummarisedTimeEntryDto()
-				{
-					Date = new DateTime(DateTime.Now.Year, DateTime.Now.Month, x + 1),
-				}
-				: new SummarisedTimeEntryDto
-				{
-					Date = new DateTime(DateTime.Now.Year, DateTime.Now.Month, x + 1),
-					Summaries = Enumerable.Range(0, r.Next(1, 7))
-						.Select(y => new TimeEntrySummaryDto()
-						{
-							Duration = DateTimeOffset.Now.Add(TimeSpan.FromHours(r.Next(1, 2))) - DateTimeOffset.Now.Add(TimeSpan.FromHours(-1 * r.Next(0, 3))),
-							Colour = Color.FromRgb(
-									(byte)r.Next(0, 255),
-									(byte)r.Next(0, 255),
-									(byte)r.Next(0, 255)
-								)
-								.ToUInt32()
-						})
-						.ToList()
-				})
+			.Select(x => new SummarisedTimeEntryViewModel(new SummarisedTimeEntryDto
+			{
+				Date = DateTimeOffset.Now.AddDays(-3 + x).Date,
+				Summaries = Enumerable.Range(0, 6)
+					.Select(y => new TimeEntrySummaryDto
+					{
+						Duration = new TimeSpan(0, r.Next(0, 180), 0),
+						Colour = Color.FromRgb(
+							(byte)r.Next(0, 255),
+							(byte)r.Next(0, 255),
+							(byte)r.Next(0, 255)
+						).ToUInt32()
+					})
+					.ToList()
+			}))
 			.ToList();
 
-		_selectedDateTimeEntriesCache.Edit(cacheUpdater =>
+
+		SelectedTimeSummary = TimeEntrySummaries.First();
+		SelectedTimeSummary.Selected = true;
+
+		var id = 1;
+		SelectedDateTimeEntriesCache.Edit(cache =>
 		{
-			cacheUpdater.Load(TimeEntrySummaries.First().Summaries.Select((x, i) => new TimeEntryDto()
-			{
-				Name = $"Name {i}",
-				Description = descriptions[r.Next(0, descriptions.Count)],
-				Start = DateTimeOffset.Now.Add(TimeSpan.FromHours(-1)),
-				End = DateTimeOffset.Now.Add(TimeSpan.FromHours(2)),
-				Colour = x.Colour
-			}));
+			var pretendEntries = SelectedTimeSummary.SummarisedTimeEntryDto.Summaries
+				.Select(x => new TimeEntryDto
+				{
+					Id = id++,
+					Colour = x.Colour,
+					Name = names[r.Next(0, names.Count)],
+					Description = descriptions[r.Next(0, descriptions.Count)],
+					Start = DateTimeOffset.Now,
+					End = DateTimeOffset.Now.Add(x.Duration!.Value),
+				});
+			cache.Load(pretendEntries);
 		});
-		*/
 	}
 }
