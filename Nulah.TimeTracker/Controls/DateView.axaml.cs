@@ -9,6 +9,7 @@ using Avalonia.Media;
 using Avalonia.ReactiveUI;
 using Avalonia.Threading;
 using DynamicData;
+using DynamicData.Binding;
 using Nulah.TimeTracker.Core;
 using Nulah.TimeTracker.Data;
 using Nulah.TimeTracker.Data.Criteria;
@@ -44,7 +45,7 @@ public partial class DateView : ReactiveUserControl<DateViewModel>
 			// I've no idea if it's a bug or what but whatever I'll deal with this later when/if I give a shit
 			// No combination of e.handled, or dispatching to the UIThread, or sleep threading or whatever will do it.
 			// WeekSelectorButton.Flyout?.Hide();
-			ViewModel?.SelectWeekFromDate(selectedDate);
+			ViewModel?.LoadWeekFromDate(selectedDate);
 		}
 	}
 }
@@ -103,7 +104,10 @@ public class DateViewModel : ViewModelBase
 		SelectedDateTimeEntriesCache
 			.Connect()
 			.DeferUntilLoaded()
-			.Bind(out _selectedDateTimeEntriesBinding)
+			.SortAndBind(
+				out _selectedDateTimeEntriesBinding,
+				SortExpressionComparer<TimeEntryDto>.Ascending(x => x.Start)
+			)
 			.Subscribe();
 
 		LoadedWeekSummaryCache
@@ -121,14 +125,11 @@ public class DateViewModel : ViewModelBase
 		{
 			Dispatcher.UIThread.Invoke(() =>
 			{
-				// TODO: maybe filter out summaries with duration under a certain time that would be too small to see
-				// Under 15 min if we have more than 5 entries maybe? Hard to determine what should/shouldn't be culled
+				LoadWeekFromDate(DateTimeOffset.Now);
 
-				SelectWeekFromDate(DateTimeOffset.Now);
+				SelectedTimeSummary = LoadedWeekSummaryCache.Lookup(DateTimeOffset.Now.Date).Value;
 
-				// TODO: change this to null and handle the first time use having no time entries added
-				SelectedTimeSummary = TimeEntrySummaries.LastOrDefault();
-				SetSelectedTimeEntriesForDate(DateTimeOffset.Now.Date, _timeManager);
+				LoadSelectedTimeEntriesForDate(DateTimeOffset.Now.Date, _timeManager);
 			});
 		}
 	}
@@ -137,11 +138,11 @@ public class DateViewModel : ViewModelBase
 	/// Loads the time entry summary for the week containing the given date
 	/// </summary>
 	/// <param name="selectedDate"></param>
-	public void SelectWeekFromDate(DateTimeOffset selectedDate)
+	public void LoadWeekFromDate(DateTimeOffset selectedDate)
 	{
 		if (_timeManager != null)
 		{
-			SelectWeekFromDateInternal(selectedDate, _timeManager);
+			LoadWeekFromDateInternal(selectedDate, _timeManager);
 		}
 	}
 
@@ -150,7 +151,7 @@ public class DateViewModel : ViewModelBase
 	/// </summary>
 	/// <param name="date"></param>
 	/// <param name="timeManager"></param>
-	private void SelectWeekFromDateInternal(DateTimeOffset date, TimeManager timeManager)
+	private void LoadWeekFromDateInternal(DateTimeOffset date, TimeManager timeManager)
 	{
 		var startOfWeek = GetStartOfWeek(date);
 		GetTimeEntrySummariesForRange(startOfWeek, startOfWeek.AddDays(7), timeManager);
@@ -175,7 +176,7 @@ public class DateViewModel : ViewModelBase
 				SelectedTimeSummary = summarisedTimeEntryViewModel;
 				if (summarisedTimeEntryViewModel != null)
 				{
-					SetSelectedTimeEntriesForDate(new DateTimeOffset(summarisedTimeEntryViewModel.SummarisedTimeEntryDto.Date, DateTimeOffset.Now.Offset), _timeManager);
+					LoadSelectedTimeEntriesForDate(new DateTimeOffset(summarisedTimeEntryViewModel.SummarisedTimeEntryDto.Date, DateTimeOffset.Now.Offset), _timeManager);
 				}
 			});
 		}
@@ -187,71 +188,56 @@ public class DateViewModel : ViewModelBase
 		{
 			Dispatcher.UIThread.Invoke(() =>
 			{
-				// Is the current selected time date the same as time entry we just created
+				// Do we have a weekday summary selected, and would it contain our new entry?
 				if (SelectedTimeSummary != null && SelectedTimeSummary.SummarisedTimeEntryDto.Date != createdTimeEntry.Start.Date)
 				{
-					// Do we have a time entry summary for this date loaded?
-					var matchingTimeSummary = TimeEntrySummaries
-						.FirstOrDefault(x => x.SummarisedTimeEntryDto.Date == createdTimeEntry.Start.Date);
+					// The currently selected summary isn't for this time entry, find if any other loaded weekday would contain this time entry
+					var matchingTimeSummary = LoadedWeekSummaryCache.Lookup(createdTimeEntry.Start.Date);
 
-					// If we do, set the selected time summary to the existing one
-					if (matchingTimeSummary != null)
+					// If it would, set it to the current selected, and add it to what we have displayed
+					if (matchingTimeSummary.HasValue)
 					{
-						SelectedTimeSummary = matchingTimeSummary;
-						// Refresh the summaries as we're already in the loaded set
-						SetSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
+						// We do so set the selected time summary to the existing one
+						SelectedTimeSummary = matchingTimeSummary.Value;
 
-						// currently this refreshes the entire week summary for the created entry date
-						// TODO: move time entry summaries to the same as selected date time entries and use a source cache
-						// TODO: have this simply update the relevant matchingTimeSummary and insert/remove/update the relevant time summary
-						// TODO: update GetTimeEntrySummariesForRange to update indexes and replace this line with a refresh on a single summary by getting the summary for that single date
-						// TODO: definitely change this to a source cache now that I'm also creating view models around the dtos
-						// TODO: have this simply update the relevant matching time summary and insert/remove/update the relevant time summary
-						// TODO: same as above, update this once backed by a source cache
-						SelectWeekFromDateInternal(createdTimeEntry.Start, _timeManager);
+						AddOrUpdateEntryInCurrentSelectedDate(createdTimeEntry);
 					}
 					else
 					{
-						// we don't have the current date loaded, either it's a new date entry outside of our range
+						// We don't have a week for the new time entry loaded, either it's a new date entry outside of our range
 						// or a date very far in the future.
-						SelectWeekFromDateInternal(createdTimeEntry.Start, _timeManager);
 						// Load the time entries for the date of the created time entry
-						SetSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
+						LoadWeekFromDateInternal(createdTimeEntry.Start, _timeManager);
 
-						// Set the selected time summary
-						SelectedTimeSummary = TimeEntrySummaries
-							.First(x => x.SummarisedTimeEntryDto.Date == createdTimeEntry.Start.Date);
+						// Load the time entries for the day
+						LoadSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
+
+						// Then set the selected time summary
+						SelectedTimeSummary = LoadedWeekSummaryCache.Lookup(createdTimeEntry.Start.Date).Value;
 					}
 				}
 				else
 				{
+					AddOrUpdateEntryInCurrentSelectedDate(createdTimeEntry);
 					// We created a time entry for the current selected time summary but for now we reload the entire
 					// day as we may have somehow added in additional dates from elsewhere (the database can be updated
 					// freely currently as we don't hold an exclusive lock on it when the app is running)
-					SetSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
-					// Refresh the summaries as we're already in the loaded set
-					// TODO: move time entry summaries to the same as selected date time entries and use a source cache
-					// TODO: have this simply update the relevant matchingTimeSummary and insert/remove/update the relevant time summary
-					// TODO: update GetTimeEntrySummariesForRange to update indexes and replace this line with a refresh on a single summary by getting the summary for that single date
-					// TODO: definitely change this to a source cache now that I'm also creating view models around the dtos
-					// TODO: have this simply update the relevant matching time summary and insert/remove/update the relevant time summary
-					// TODO: same as above, update this once backed by a source cache
-					SelectWeekFromDateInternal(createdTimeEntry.Start, _timeManager);
+					UpdateTimeEntrySummaryForDate(createdTimeEntry.Start, _timeManager);
 				}
 			});
 		}
 	}
 
 	/// <summary>
-	/// Updates <see cref="SelectedDateTimeEntriesCache"/> based on the incoming <paramref name="updatedTimeEntryDto"/>,
+	/// Updates <see cref="SelectedDateTimeEntriesCache"/> based on the incoming <paramref name="timeEntryDto"/>,
 	/// and refreshes the date summary it belongs to.
 	/// <para>
 	///	This method assumes that the updating time entry belongs to the selected summary. If it does not in the future
 	/// then this may cause unintended behaviours and cause the selected summary to drift out of sync
 	/// </para>
 	/// </summary>
-	/// <param name="updatedTimeEntryDto"></param>
-	public void UpdateTimeEntry(TimeEntryDto updatedTimeEntryDto)
+	/// <param name="timeEntryDto"></param>
+	public void UpdateTimeEntry(TimeEntryDto timeEntryDto)
 	{
 		if (_timeManager != null)
 		{
@@ -259,11 +245,29 @@ public class DateViewModel : ViewModelBase
 			{
 				// TODO: check that the currently selected summary belongs to the updating time entry. If it doesn't, do not
 				// update the cache
-				SelectedDateTimeEntriesCache.AddOrUpdate(updatedTimeEntryDto);
+				SelectedDateTimeEntriesCache.AddOrUpdate(timeEntryDto);
 				// lazy refresh the date summaries
-				SelectWeekFromDateInternal(updatedTimeEntryDto.Start, _timeManager);
+				LoadWeekFromDateInternal(timeEntryDto.Start, _timeManager);
 			});
 		}
+	}
+
+	/// <summary>
+	/// Adds or updates a time entry in the current selected time entry. If <paramref name="timeEntryDto"/> is not for the
+	/// selected date, nothing happens.
+	/// </summary>
+	/// <param name="timeEntryDto"></param>
+	private void AddOrUpdateEntryInCurrentSelectedDate(TimeEntryDto timeEntryDto)
+	{
+		// Do nothing if the selected time summary would not contain the incoming time entry, or we don't have a selected
+		// summary
+		if (_selectedTimeSummary == null || _selectedTimeSummary.SummarisedTimeEntryDto.Date != timeEntryDto.Start.Date)
+		{
+			return;
+		}
+
+		// Load the time entries for the given date into the cache
+		SelectedDateTimeEntriesCache.AddOrUpdate(timeEntryDto);
 	}
 
 	/// <summary>
@@ -271,7 +275,7 @@ public class DateViewModel : ViewModelBase
 	/// </summary>
 	/// <param name="start"></param>
 	/// <param name="timeManager"></param>
-	private void SetSelectedTimeEntriesForDate(DateTimeOffset start, TimeManager timeManager)
+	private void LoadSelectedTimeEntriesForDate(DateTimeOffset start, TimeManager timeManager)
 	{
 		// Load the time entries for the given date into the cache
 		SelectedDateTimeEntriesCache.Edit(cache =>
@@ -285,9 +289,9 @@ public class DateViewModel : ViewModelBase
 	}
 
 	/// <summary>
-	/// Loads a summary of time entries between a start and end date, and sets <see cref="TimeEntrySummaries"/>.
+	/// Loads a summary of time entries between a start and end date, and updates <see cref="LoadedWeekSummaryCache"/>.
 	/// <para>
-	/// Dates with no time entries will be a summary with no <see cref="TimeEntrySummaryDto"/>
+	/// Dates with no time entries will be a summary with no <see cref="TimeEntrySummaryDto"/>.
 	/// </para>
 	/// </summary>
 	/// <param name="start"></param>
@@ -325,6 +329,39 @@ public class DateViewModel : ViewModelBase
 		{
 			cache.Load(populatedSummaries);
 		});
+	}
+
+	/// <summary>
+	/// Updates a loaded weekday summary by the given <paramref name="date"/> by loading from the database.
+	/// If no matching weekday summary is found no action is performed. 
+	/// </summary>
+	/// <param name="date"></param>
+	/// <param name="timeManager"></param>
+	private void UpdateTimeEntrySummaryForDate(DateTimeOffset date, TimeManager timeManager)
+	{
+		// Don't attempt to update a summary for a date that isn't loaded.
+		if (!LoadedWeekSummaryCache.Lookup(date.Date).HasValue)
+		{
+			return;
+		}
+
+		// set to start of day to only capture time entries for today
+		// TODO: this can probably be improved
+		var startOfDate = date.Add(-date.TimeOfDay);
+
+		// Load the summaries for the given date
+		var summaries = timeManager.GetEntrySummary(new TimeEntryQueryCriteria()
+		{
+			From = startOfDate,
+			To = startOfDate.Add(new TimeSpan(23, 59, 59)),
+		});
+
+		// If we get a single value, update the value in the loaded week. Will throw otherwise.
+		// TODO: do nothing if the date param does not exist in the loaded week summary
+		if (summaries.SingleOrDefault() is { } foundSummary)
+		{
+			LoadedWeekSummaryCache.AddOrUpdate(new SummarisedTimeEntryViewModel(foundSummary));
+		}
 	}
 
 	/// <summary>
