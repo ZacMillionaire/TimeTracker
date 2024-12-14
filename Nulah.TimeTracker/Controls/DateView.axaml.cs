@@ -239,15 +239,16 @@ public class DateViewModel : ViewModelBase
 	/// <param name="timeEntryDto"></param>
 	public void UpdateTimeEntry(TimeEntryDto timeEntryDto)
 	{
-		if (_timeManager != null)
+		if (_timeManager != null
+		    && _selectedTimeSummary != null
+		    && _selectedTimeSummary.SummarisedTimeEntryDto.Date == timeEntryDto.Start.Date
+		   )
 		{
 			Dispatcher.UIThread.Invoke(() =>
 			{
-				// TODO: check that the currently selected summary belongs to the updating time entry. If it doesn't, do not
-				// update the cache
 				SelectedDateTimeEntriesCache.AddOrUpdate(timeEntryDto);
-				// lazy refresh the date summaries
-				LoadWeekFromDateInternal(timeEntryDto.Start, _timeManager);
+				// Refresh the week summary for the selected date
+				UpdateTimeEntrySummaryForDate(timeEntryDto.Start, _timeManager);
 			});
 		}
 	}
