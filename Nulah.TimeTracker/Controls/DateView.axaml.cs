@@ -16,6 +16,7 @@ using Nulah.TimeTracker.Data;
 using Nulah.TimeTracker.Data.Criteria;
 using Nulah.TimeTracker.Domain.Models;
 using Nulah.TimeTracker.Models;
+using Nulah.TimeTracker.Models.Enums;
 using Nulah.TimeTracker.ViewModels;
 using ReactiveUI;
 using Splat;
@@ -87,8 +88,6 @@ public class DateViewModel : ViewModelBase
 	public ReadOnlyObservableCollection<TimeEntryDto> SelectedDateTimeEntries => _selectedDateTimeEntriesBinding;
 	public ReadOnlyObservableCollection<SummarisedTimeEntryViewModel> TimeEntrySummaries => _loadedWeekSummaryBinding;
 
-	// todo change this to a datetime as we don't use it in the xaml and probably private
-	// TODO: set the active property on this when selected and add styling to it
 	public SummarisedTimeEntryViewModel? SelectedTimeSummary
 	{
 		get => _selectedTimeSummary;
@@ -186,82 +185,84 @@ public class DateViewModel : ViewModelBase
 	{
 		if (_timeManager != null)
 		{
-			Dispatcher.UIThread.Invoke(() =>
-			{
-				IsEnabled = false;
-				// Do we have a weekday summary selected, and would it contain our new entry?
-				if (_selectedTimeSummary != null && _selectedTimeSummary.SummarisedTimeEntryDto.Date != createdTimeEntry.Start.Date)
-				{
-					// The currently selected summary isn't for this time entry, find if any other loaded weekday would contain this time entry
-					var matchingTimeSummary = LoadedWeekSummaryCache.Lookup(createdTimeEntry.Start.Date);
-
-					// If it would, set it to the current selected, and add it to what we have displayed
-					if (matchingTimeSummary.HasValue)
-					{
-						// Load the time entries for the date we're switching to
-						LoadSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
-
-						// Update the target summary date to reflect the new entry
-						UpdateTimeEntrySummaryForDate(createdTimeEntry.Start, _timeManager);
-
-						// Set the selected time summary to the existing one
-						UpdateSelectedSummary(matchingTimeSummary.Value);
-					}
-					else
-					{
-						// We don't have a week for the new time entry loaded, either it's a new date entry outside of our range
-						// or a date very far in the future.
-						// Load the time entries for the date of the created time entry
-						LoadWeekFromDateInternal(createdTimeEntry.Start, _timeManager);
-
-						// Load the time entries for the day
-						LoadSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
-
-						// Then set the selected time summary
-						UpdateSelectedSummary(LoadedWeekSummaryCache.Lookup(createdTimeEntry.Start.Date).Value);
-					}
-				}
-				else
-				{
-					AddOrUpdateEntryInCurrentSelectedDate(createdTimeEntry);
-					// We created a time entry for the current selected time summary but for now we reload the entire
-					// day as we may have somehow added in additional dates from elsewhere (the database can be updated
-					// freely currently as we don't hold an exclusive lock on it when the app is running)
-					UpdateTimeEntrySummaryForDate(createdTimeEntry.Start, _timeManager);
-				}
-
-				IsEnabled = true;
-			});
+			TimeEntryModified(createdTimeEntry, TimeEntryModifyAction.Created);
 		}
 	}
 
 	/// <summary>
-	/// Updates <see cref="SelectedDateTimeEntriesCache"/> based on the incoming <paramref name="timeEntryDto"/>,
+	/// Updates <see cref="SelectedDateTimeEntriesCache"/> based on the incoming <paramref name="updatedTimeEntryDto"/>,
 	/// and refreshes the date summary it belongs to.
-	/// <para>
-	///	This method assumes that the updating time entry belongs to the selected summary. If it does not in the future
-	/// then this may cause unintended behaviours and cause the selected summary to drift out of sync
-	/// </para>
 	/// </summary>
-	/// <param name="timeEntryDto"></param>
-	public void UpdateTimeEntry(TimeEntryDto timeEntryDto)
+	/// <param name="updatedTimeEntryDto"></param>
+	public void TimeEntryUpdated(TimeEntryDto updatedTimeEntryDto)
 	{
-		if (_timeManager != null
-		    && _selectedTimeSummary != null
-		    && _selectedTimeSummary.SummarisedTimeEntryDto.Date == timeEntryDto.Start.Date
-		   )
+		if (_timeManager != null)
 		{
-			Dispatcher.UIThread.Invoke(() =>
-			{
-				IsEnabled = false;
-
-				SelectedDateTimeEntriesCache.AddOrUpdate(timeEntryDto);
-				// Refresh the week summary for the selected date
-				UpdateTimeEntrySummaryForDate(timeEntryDto.Start, _timeManager);
-
-				IsEnabled = true;
-			});
+			TimeEntryModified(updatedTimeEntryDto, TimeEntryModifyAction.Updated);
 		}
+	}
+
+	private void TimeEntryModified(TimeEntryDto createdTimeEntry, TimeEntryModifyAction modifyAction)
+	{
+		Dispatcher.UIThread.Invoke(() =>
+		{
+			IsEnabled = false;
+
+			// Do we have a weekday summary selected, and would it contain our new entry?
+			if (_selectedTimeSummary != null && _selectedTimeSummary.SummarisedTimeEntryDto.Date != createdTimeEntry.Start.Date)
+			{
+				// Store the previously selected date in the event we're updating the date on a time entry
+				var previouslySelectedTimeSummary = _selectedTimeSummary.SummarisedTimeEntryDto.Date;
+
+				// The currently selected summary isn't for this time entry, find if any other loaded weekday would contain this time entry
+				var matchingTimeSummary = LoadedWeekSummaryCache.Lookup(createdTimeEntry.Start.Date);
+
+				// If it would, set it to the current selected, and add it to what we have displayed
+				if (matchingTimeSummary.HasValue)
+				{
+					// Load the time entries for the date we're switching to
+					LoadSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
+
+					// Update the target summary date to reflect the new entry
+					UpdateTimeEntrySummaryForDate(createdTimeEntry.Start, _timeManager);
+
+					// Update the previously selected time entry to ensure the previous time entry summary is updated with any changes
+					UpdateTimeEntrySummaryForDate(previouslySelectedTimeSummary, _timeManager);
+
+					// Set the selected time summary to the existing one if we're adding a new entry
+					if (modifyAction == TimeEntryModifyAction.Created)
+					{
+						UpdateSelectedSummary(matchingTimeSummary.Value);
+					}
+				}
+				else
+				{
+					// We don't have a week for the new time entry loaded, either it's a new date entry outside of our range
+					// or a date very far in the future.
+					// Load the time entries for the date of the created time entry
+					LoadWeekFromDateInternal(createdTimeEntry.Start, _timeManager);
+
+					// Load the time entries for the day
+					LoadSelectedTimeEntriesForDate(createdTimeEntry.Start, _timeManager);
+
+					// Then set the selected time summary
+					UpdateSelectedSummary(LoadedWeekSummaryCache.Lookup(createdTimeEntry.Start.Date).Value);
+				}
+			}
+			else
+			{
+				AddOrUpdateEntryInCurrentSelectedDate(createdTimeEntry);
+				// We created a time entry for the current selected time summary but for now we reload the entire
+				// day as we may have somehow added in additional dates from elsewhere (the database can be updated
+				// freely currently as we don't hold an exclusive lock on it when the app is running)
+				UpdateTimeEntrySummaryForDate(createdTimeEntry.Start, _timeManager);
+
+				// TODO: create a selected date duration property because I'm currently too lazy to refactor a view model
+				// for summaries just yet (I should probably do that anyway though)
+			}
+
+			IsEnabled = true;
+		});
 	}
 
 	/// <summary>
@@ -389,7 +390,6 @@ public class DateViewModel : ViewModelBase
 					new()
 					{
 						Date = date.Date,
-						Summaries = []
 					}
 				);
 			})
@@ -433,9 +433,15 @@ public class DateViewModel : ViewModelBase
 		if (summaries.SingleOrDefault() is { } foundSummary)
 		{
 			loadedSummary.Value.SummarisedTimeEntryDto.Summaries = foundSummary.Summaries;
-			loadedSummary.Value.Selected = true;
-			LoadedWeekSummaryCache.AddOrUpdate(loadedSummary.Value);
 		}
+		else
+		{
+			// Clear the summaries for the summarised time entry as there are no longer any time entries associated to it
+			loadedSummary.Value.SummarisedTimeEntryDto.Summaries = [];
+		}
+
+		loadedSummary.Value.Selected = true;
+		LoadedWeekSummaryCache.AddOrUpdate(loadedSummary.Value);
 	}
 
 	/// <summary>
