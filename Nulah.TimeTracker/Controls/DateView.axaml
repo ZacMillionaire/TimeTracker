@@ -5,12 +5,13 @@
              xmlns:controls="clr-namespace:Nulah.TimeTracker.Controls"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
+             xmlns:viewModels="clr-namespace:Nulah.TimeTracker.ViewModels"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450"
              x:Class="Nulah.TimeTracker.Controls.DateView"
-             x:DataType="controls:DateViewModel"
+             x:DataType="viewModels:DateViewModel"
              IsEnabled="{Binding IsEnabled}">
     <Design.DataContext>
-        <controls:DateViewDesignModel />
+        <viewModels:DateViewDesignModel />
     </Design.DataContext>
     <UserControl.Resources>
         <Flyout x:Key="CalendarFlyout" ShowMode="Transient">
