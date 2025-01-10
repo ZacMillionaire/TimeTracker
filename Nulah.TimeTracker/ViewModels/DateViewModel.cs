@@ -62,16 +62,23 @@ public class DateViewModel : ViewModelBase
 	}
 
 	public ReactiveCommand<SummarisedTimeEntryViewModel, Unit> SelectDateCommand { get; private set; }
+	public ReactiveCommand<Unit, Unit> PreviousWeekCommand { get; private set; }
+	public ReactiveCommand<Unit, Unit> NextWeekCommand { get; private set; }
 
 	public Action<int> TimeEntrySelected { get; init; } = (int timeEntryId) =>
 	{
 	};
 
+	/// <summary>
+	/// Dependency
+	/// </summary>
 	private readonly TimeManager? _timeManager;
 
 	public DateViewModel(TimeManager? timeManager = null)
 	{
 		SelectDateCommand = ReactiveCommand.Create<SummarisedTimeEntryViewModel>(DateSelected);
+		PreviousWeekCommand = ReactiveCommand.Create(PreviousWeek);
+		NextWeekCommand = ReactiveCommand.Create(NextWeek);
 
 		_timeManager = timeManager ?? Locator.Current.GetService<TimeManager>();
 
@@ -161,8 +168,19 @@ public class DateViewModel : ViewModelBase
 		}
 	}
 
+	private void PreviousWeek()
+	{
+		LoadWeekFromDate(_selectedTimeSummary.SummarisedTimeEntryDto.Date.AddDays(-7));
+	}
+
+	private void NextWeek()
+	{
+		LoadWeekFromDate(_selectedTimeSummary.SummarisedTimeEntryDto.Date.AddDays(7));
+	}
+	
 	private void TimeEntryModified(TimeEntryDto createdTimeEntry, TimeEntryModifyAction modifyAction)
 	{
+		// TODO: private method should not invoke the UIThread dispatcher
 		Dispatcher.UIThread.Invoke(() =>
 		{
 			IsEnabled = false;
@@ -247,8 +265,10 @@ public class DateViewModel : ViewModelBase
 	/// <param name="summarisedTimeEntryViewModel"></param>
 	private void DateSelected(SummarisedTimeEntryViewModel? summarisedTimeEntryViewModel = null)
 	{
+		// TODO: private method should not check if dependency is null and should take it as a parameter
 		if (_timeManager != null)
 		{
+			// TODO: private method should not invoke the UIThread dispatcher
 			Dispatcher.UIThread.Invoke(() =>
 			{
 				UpdateSelectedSummary(summarisedTimeEntryViewModel);
@@ -423,7 +443,6 @@ public class DateViewModel : ViewModelBase
 			.ToList();
 	}
 }
-
 
 public class DateViewDesignModel : DateViewModel
 {
