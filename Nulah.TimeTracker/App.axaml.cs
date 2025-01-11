@@ -75,7 +75,8 @@ public partial class App : Application
 
 	private string? GetVersion()
 	{
-		return FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
+		using var proc = Process.GetCurrentProcess();
+		return proc.MainModule.FileVersionInfo.ProductVersion;
 	}
 
 	private static void AddCommonServices()

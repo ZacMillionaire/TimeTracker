@@ -43,7 +43,7 @@
         <ColorPicker Color="{Binding Colour}" HorizontalAlignment="Left" />
 
         <Label Content="Description" />
-        <TextBox Watermark="Start typing..." MinLines="5" Text="{Binding Description}" />
+        <TextBox Watermark="Start typing..." MinLines="5" TextWrapping="WrapWithOverflow" Text="{Binding Description}" />
 
         <Label Content="Date" />
         <DatePicker SelectedDate="{Binding SelectedDate}" />
@@ -94,6 +94,7 @@
             <Run Text="Duration:" />
             <Run Text="{Binding Duration, StringFormat='h\\hmm\\m'}" />
         </TextBlock>
+        <CheckBox IsChecked="{Binding ExcludeFromDurationTotal}">Exclude from duration totals</CheckBox>
         <UniformGrid Columns="2">
             <Button Margin="2.5,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                     Command="{Binding ClearTimeEntryCommand}"

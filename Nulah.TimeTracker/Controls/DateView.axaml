@@ -5,77 +5,120 @@
              xmlns:controls="clr-namespace:Nulah.TimeTracker.Controls"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
+             xmlns:viewModels="clr-namespace:Nulah.TimeTracker.ViewModels"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450"
              x:Class="Nulah.TimeTracker.Controls.DateView"
-             x:DataType="controls:DateViewModel">
+             x:DataType="viewModels:DateViewModel"
+             IsEnabled="{Binding IsEnabled}">
     <Design.DataContext>
-        <controls:DateViewDesignModel />
+        <viewModels:DateViewDesignModel />
     </Design.DataContext>
-    <Grid RowDefinitions="Auto,Auto,*">
-        <Button Grid.Row="0" Content="Select week by date" x:Name="WeekSelectorButton">
-            <Button.Flyout>
-                <Flyout>
-                    <Calendar SelectedDatesChanged="Calendar_OnSelectedDatesChanged" x:Name="WeekPicker" />
-                </Flyout>
-            </Button.Flyout>
-        </Button>
+    <UserControl.Resources>
+        <Flyout x:Key="CalendarFlyout" ShowMode="Transient">
+            <StackPanel>
+                <Button Content="Close" x:Name="CloseCalendarFlyout" Click="CloseCalendarFlyout_OnClick"
+                        HorizontalAlignment="Right" />
+                <Calendar SelectedDatesChanged="WeekPicker_OnSelectedDatesChanged" x:Name="WeekPicker" />
+            </StackPanel>
+        </Flyout>
+    </UserControl.Resources>
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
+        <Button Grid.Row="0" Content="Select week by date" x:Name="WeekSelectorButton"
+                Click="WeekSelectorButton_OnClick" />
         <!-- header date group -->
-        <Border Grid.Row="1" BorderBrush="#EBEBEB" BorderThickness="0,0,0,1">
-            <ItemsControl ItemsSource="{Binding TimeEntrySummaries}">
-                <ItemsControl.Styles>
-                    <Style Selector="ContentPresenter > Border#DateParent">
-                        <Setter Property="BorderThickness" Value="0,0,1,0" />
-                        <Setter Property="BorderBrush" Value="#EBEBEB" />
-                    </Style>
-                    <Style Selector="ContentPresenter:nth-last-child(1) > Border#DateParent">
-                        <Setter Property="BorderThickness" Value="0" />
-                    </Style>
-                </ItemsControl.Styles>
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Columns="7" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Name="DateParent" Background="Transparent">
-                            <i:Interaction.Behaviors>
-                                <ia:EventTriggerBehavior
-                                    EventName="PointerReleased"
-                                    SourceObject="{Binding #DateParent}">
-                                    <ia:InvokeCommandAction
-                                        Command="{Binding $parent[ItemsControl].((controls:DateViewModel)DataContext).SelectDateCommand}"
-                                        CommandParameter="{Binding}" />
-                                </ia:EventTriggerBehavior>
-                            </i:Interaction.Behaviors>
-                            <Grid RowDefinitions="Auto,Auto,Auto,Auto"
-                                  DataContext="{Binding SummarisedTimeEntryDto}">
-                                <TextBlock Grid.Row="0"
-                                           FontSize="30"
-                                           FontWeight="Bold"
-                                           TextAlignment="Center"
-                                           Text="{Binding Date, StringFormat='dd'}" />
-                                <TextBlock Grid.Row="1"
-                                           FontSize="18"
-                                           TextAlignment="Center"
-                                           Text="{Binding Date, StringFormat='MMM'}" />
-                                <TextBlock Grid.Row="2"
-                                           FontSize="14"
-                                           TextAlignment="Center"
-                                           Text="{Binding Date.Year}" />
-                                <controls:FlexingTimeSummary
-                                    Grid.Row="3"
-                                    Height="10"
-                                    DataContext="{Binding}" />
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+        <Border Grid.Row="1" BorderBrush="#EBEBEB" BorderThickness="0,0,0,1" x:Name="WeekSummaryContainer">
+            <Grid>
+                <Grid.ColumnDefinitions>Auto,*,Auto</Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Command="{Binding PreviousWeekCommand}">
+                    &lt;
+                </Button>
+                <Button Grid.Column="2" Command="{Binding NextWeekCommand}">
+                    &gt;
+                </Button>
+                <ItemsControl Grid.Column="1" ItemsSource="{Binding TimeEntrySummaries}">
+                    <ItemsControl.Styles>
+                        <Style Selector="ContentPresenter > Border#DateParent">
+                            <Setter Property="BorderThickness" Value="0,0,1,0" />
+                            <Setter Property="BorderBrush" Value="#EBEBEB" />
+                        </Style>
+                        <Style Selector="ContentPresenter:nth-last-child(1) > Border#DateParent">
+                            <Setter Property="BorderThickness" Value="0" />
+                        </Style>
+                    </ItemsControl.Styles>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="7" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Name="DateParent" Classes.IsActive="{Binding Selected}">
+                                <Border.Styles>
+                                    <Style Selector="Border">
+                                        <Setter Property="Background" Value="Transparent" />
+                                    </Style>
+                                    <Style Selector="Border.IsActive">
+                                        <Setter Property="Background" Value="Aqua" />
+                                    </Style>
+                                </Border.Styles>
+                                <i:Interaction.Behaviors>
+                                    <ia:EventTriggerBehavior
+                                        EventName="PointerReleased"
+                                        SourceObject="{Binding #DateParent}">
+                                        <ia:InvokeCommandAction
+                                            Command="{Binding $parent[ItemsControl].((viewModels:DateViewModel)DataContext).SelectDateCommand}"
+                                            CommandParameter="{Binding}" />
+                                    </ia:EventTriggerBehavior>
+                                </i:Interaction.Behaviors>
+                                <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+                                      DataContext="{Binding SummarisedTimeEntryDto}">
+                                    <TextBlock Grid.Row="0"
+                                               FontSize="30"
+                                               FontWeight="Bold"
+                                               TextAlignment="Center"
+                                               Text="{Binding Date, StringFormat='dd'}" />
+                                    <TextBlock Grid.Row="1"
+                                               FontSize="18"
+                                               TextAlignment="Center"
+                                               Text="{Binding Date, StringFormat='MMM'}" />
+                                    <TextBlock Grid.Row="2"
+                                               FontSize="14"
+                                               TextAlignment="Center"
+                                               Text="{Binding Date.Year}" />
+                                    <controls:FlexingTimeSummary
+                                        Grid.Row="3"
+                                        Height="10"
+                                        DataContext="{Binding}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
         </Border>
         <!-- end header date group -->
+        <!-- duration summary -->
+        <Border Grid.Row="2" DataContext="{Binding SelectedTimeSummary}"
+                IsVisible="{Binding  SummarisedTimeEntryDto.Summaries.Count}">
+            <Border.Styles>
+                <Style Selector="Border">
+                    <Setter Property="BorderThickness" Value="0,0,0,1" />
+                    <Setter Property="BorderBrush" Value="#EBEBEB" />
+                </Style>
+            </Border.Styles>
+            <StackPanel HorizontalAlignment="Right">
+                <TextBlock TextAlignment="Right">
+                    Total Duration
+                </TextBlock>
+                <TextBlock TextAlignment="Right">
+                    <Run FontSize="20" FontWeight="Bold" Text="{Binding  TotalDuration.Hours}" />hours
+                    <Run FontSize="20" FontWeight="Bold" Text="{Binding  TotalDuration.Minutes}" />minutes
+                </TextBlock>
+            </StackPanel>
+        </Border>
+        <!-- end duration summary -->
         <!-- time entries for selected date -->
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="3">
             <ItemsControl ItemsSource="{Binding SelectedDateTimeEntries}">
                 <ItemsControl.Template>
                     <ControlTemplate>

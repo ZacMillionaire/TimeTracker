@@ -36,7 +36,8 @@ public class TimeTrackerRepository
 			Description = newTimeEntry.Description,
 			Start = newTimeEntry.Start,
 			End = newTimeEntry.End,
-			Colour = newTimeEntry.Colour
+			Colour = newTimeEntry.Colour,
+			ExcludeFromDurationTotal = newTimeEntry.ExcludeFromDurationTotal
 		};
 
 		var db = GetConnection();
@@ -61,6 +62,7 @@ public class TimeTrackerRepository
 		updatingEntry.Start = newEntry.Start;
 		updatingEntry.End = newEntry.End;
 		updatingEntry.Colour = newEntry.Colour;
+		updatingEntry.ExcludeFromDurationTotal = newEntry.ExcludeFromDurationTotal;
 
 		db.Update(updatingEntry);
 
@@ -81,7 +83,8 @@ public class TimeTrackerRepository
 					.Select(y => new TimeEntrySummaryDto()
 					{
 						Colour = y.Colour,
-						Duration = y.End - y.Start
+						Duration = y.End - y.Start,
+						ExcludeFromDurationTotal = y.ExcludeFromDurationTotal
 					})
 					.ToList()
 			})
@@ -124,7 +127,7 @@ public class TimeTrackerRepository
 		var connection = GetConnection();
 		var matchingEntries = connection.Table<TimeEntry>()
 			.Where(BuildTransactionQuery(criteria))
-			.GroupBy(x => new {x.Colour, x.Name})
+			.GroupBy(x => new { x.Colour, x.Name })
 			.Select(x => new TimeEntrySearchAggregatedSuggestion()
 			{
 				Colour = x.Key.Colour,
@@ -151,7 +154,8 @@ public class TimeTrackerRepository
 			// TODO: make this configurable maybe?
 			Start = newEntry.Start.ToOffset(TimeZoneInfo.Local.BaseUtcOffset),
 			End = newEntry.End?.ToOffset(TimeZoneInfo.Local.BaseUtcOffset),
-			Colour = newEntry.Colour
+			Colour = newEntry.Colour,
+			ExcludeFromDurationTotal = newEntry.ExcludeFromDurationTotal
 		};
 	}
 
@@ -205,9 +209,21 @@ public class SummarisedTimeEntryDto
 	public DateTime Date { get; set; }
 	public List<TimeEntrySummaryDto> Summaries { get; set; } = [];
 
+	/// <summary>
+	/// Total duration of all summaries
+	/// </summary>
 	public TimeSpan Duration => new(
 		Summaries
-			.Where(x => x.Duration.HasValue)
+			.Where(x => x is { Duration: not null})
+			.Sum(x => x.Duration!.Value.Ticks)
+	);
+	
+	/// <summary>
+	/// Total timespan not including excluded entries 
+	/// </summary>
+	public TimeSpan DurationWithExclusions => new(
+		Summaries
+			.Where(x => x is { Duration: not null, ExcludeFromDurationTotal: false})
 			.Sum(x => x.Duration!.Value.Ticks)
 	);
 }
@@ -216,4 +232,5 @@ public class TimeEntrySummaryDto
 {
 	public uint? Colour { get; set; }
 	public TimeSpan? Duration { get; set; }
+	public bool ExcludeFromDurationTotal { get; set; }
 }

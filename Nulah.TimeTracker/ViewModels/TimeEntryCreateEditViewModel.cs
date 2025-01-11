@@ -60,6 +60,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 	private TimeSpan? _endTime;
 	private bool _isSaving;
 	private Color? _colour;
+	private bool _excludeFromDurationTotal;
 
 	public string? TaskName
 	{
@@ -101,6 +102,12 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 	{
 		get => _colour ?? Colors.Transparent;
 		set => this.RaiseAndSetIfChanged(ref _colour, value);
+	}
+
+	public bool ExcludeFromDurationTotal
+	{
+		get => _excludeFromDurationTotal;
+		set => this.RaiseAndSetIfChanged(ref _excludeFromDurationTotal, value);
 	}
 
 	private readonly IObservable<IValidationState> _taskNameNotEmpty;
@@ -236,6 +243,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 					Colour = timeEntry.Colour != null
 						? Color.FromUInt32(timeEntry.Colour.Value)
 						: null;
+					ExcludeFromDurationTotal = timeEntry.ExcludeFromDurationTotal;
 					_timeEntryLoading = false;
 				}
 			});
@@ -269,7 +277,8 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 				// Use .Date to ensure we never add time onto any time other than midnight
 				Start = _selectedDate!.Value.Date.Add(_startTime!.Value),
 				End = _endTime.HasValue ? _selectedDate!.Value.Date.Add(_endTime!.Value) : null,
-				Colour = Colour?.ToUInt32()
+				Colour = Colour?.ToUInt32(),
+				ExcludeFromDurationTotal = _excludeFromDurationTotal
 			};
 
 			if (_timeEntryId == null)
@@ -325,6 +334,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 		TaskName = null;
 		Description = null;
 		Colour = null;
+		ExcludeFromDurationTotal = false;
 	}
 
 	private Task<IEnumerable<object>> GetAggregateSearchSuggestions(string? searchString, CancellationToken cancellationToken)

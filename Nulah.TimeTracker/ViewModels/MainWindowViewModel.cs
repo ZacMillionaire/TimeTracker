@@ -68,7 +68,7 @@ public class MainWindowViewModel : ViewModelBase
 
 	private void TimeEntryUpdated(TimeEntryDto updatedTimeEntry)
 	{
-		DateViewModel?.UpdateTimeEntry(updatedTimeEntry);
+		DateViewModel?.TimeEntryUpdated(updatedTimeEntry);
 	}
 
 	private void LoadTimeEntryForEdit(int selectedTimeEntryId)

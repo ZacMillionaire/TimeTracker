@@ -15,6 +15,10 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <ContentControl>
+                    <ContentControl.Resources>
+                        <converters:ColourConverter x:Key="ColourConverter" />
+                        <converters:LightenColourConverter x:Key="LightColourConverter" />
+                    </ContentControl.Resources>
                     <ContentControl.Styles>
                         <Style Selector="TextBlock.Start, TextBlock.End">
                             <Setter Property="FontSize" Value="16" />
@@ -30,14 +34,21 @@
                             <Setter Property="FontWeight" Value="Bold" />
                             <Setter Property="FontSize" Value="18" />
                         </Style>
+                        <Style Selector="TextBlock.ExcludedFromDuration">
+                            <Setter Property="Foreground" Value="Gray" />
+                        </Style>
                         <Style Selector="TextBlock.Description">
                             <Setter Property="FontWeight" Value="Normal" />
                             <Setter Property="FontStyle" Value="Italic" />
                         </Style>
+                        <Style Selector="Grid.Content">
+                            <Setter Property="Background"
+                                    Value="{Binding Colour, Converter={StaticResource LightColourConverter}}" />
+                        </Style>
+                        <Style Selector="Grid.Content.ExcludedFromDuration">
+                            <Setter Property="Background" Value="#eeeeee" />
+                        </Style>
                     </ContentControl.Styles>
-                    <ContentControl.Resources>
-                        <converters:ColourConverter x:Key="ColourConverter" />
-                    </ContentControl.Resources>
                     <Border Name="TimeEntryBorder">
                         <Border.Styles>
                             <Style Selector="Border">
@@ -61,32 +72,37 @@
                                          }" />
                             </Style>
                         </Border.Styles>
-                        <Grid RowDefinitions="*,*" ColumnDefinitions="Auto,Auto,*">
-                            <Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"
+                        <Grid ColumnDefinitions="Auto,Auto,*"
+                              Classes="Content"
+                              Classes.ExcludedFromDuration="{Binding ExcludeFromDurationTotal}">
+                            <Border Grid.Row="0" Grid.Column="0"
                                     Width="10"
                                     Background="{Binding Colour, Converter={StaticResource ColourConverter}}" />
-                            <Grid Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
+                            <Grid Grid.Column="1" Grid.Row="0"
+                                  Width="60"
                                   RowDefinitions="Auto,*,Auto">
                                 <TextBlock Classes="Start"
                                            Grid.Row="0"
+                                           HorizontalAlignment="Center"
                                            Padding="5,0"
-                                           Text="{Binding Start, StringFormat='hh:mm'}" />
+                                           Text="{Binding Start, StringFormat='hh:mm'}">
+                                </TextBlock>
                                 <!-- duration spacer -->
-                                <Grid Grid.Row="1" RowDefinitions="*,Auto,*">
+                                <Grid Grid.Row="1" RowDefinitions="*,Auto,*"
+                                      IsVisible="{Binding Converter={x:Static ObjectConverters.IsNotNull}}"
+                                      DataContext="{Binding 
+                                                    DurationTimeSpan,
+                                                     RelativeSource={
+                                                         RelativeSource TemplatedParent
+                                                     }
+                                                    }">
                                     <Border Grid.Row="0"
                                             Width="5"
                                             MinHeight="10"
                                             Background="#D6D6D6"
                                             CornerRadius="5,5,0,0" />
-                                    <!-- TODO: can I use this relative source binding the same above? -->
                                     <TextBlock Grid.Row="1"
-                                               Text="{Binding 
-                                                    DurationTimeSpan,
-                                                     RelativeSource={
-                                                         RelativeSource TemplatedParent
-                                                     },
-                                                     StringFormat='h\\hmm\\m'
-                                                 }"
+                                               Text="{Binding StringFormat='h\\hmm\\m'}"
                                                TextAlignment="Center"
                                                HorizontalAlignment="Center" />
                                     <Border Grid.Row="2"
@@ -95,21 +111,47 @@
                                             Background="#D6D6D6"
                                             CornerRadius="0,0,5,5" />
                                 </Grid>
+                                <Grid Grid.Row="1" Grid.RowSpan="2" RowDefinitions="*,Auto"
+                                      IsVisible="{Binding DurationTimeSpan,
+                                                        RelativeSource={
+                                                            RelativeSource TemplatedParent
+                                                        }, 
+                                                        Converter={
+                                                            x:Static ObjectConverters.IsNull
+                                                        }
+                                                    }">
+                                    <Border Grid.Row="0"
+                                            Width="5"
+                                            MinHeight="25"
+                                            Background="#D6D6D6"
+                                            CornerRadius="5" />
+                                    <Border Grid.Row="1"
+                                            Width="5"
+                                            Height="5"
+                                            Margin="0,5"
+                                            Background="#D6D6D6"
+                                            CornerRadius="5" />
+                                </Grid>
                                 <!-- duration spacer end -->
                                 <TextBlock Classes="End"
                                            Grid.Row="2"
+                                           HorizontalAlignment="Center"
                                            VerticalAlignment="Bottom"
                                            Padding="5,0"
                                            Text="{Binding End, StringFormat='hh:mm'}" />
                             </Grid>
-                            <TextBlock Grid.Column="2" Grid.Row="0"
-                                       Classes="Name"
-                                       Text="{Binding Name}" />
-                            <TextBlock Grid.Column="2" Grid.Row="1"
-                                       HorizontalAlignment="Left"
-                                       Classes="Description"
-                                       Text="{Binding Description}"
-                                       TextWrapping="WrapWithOverflow" />
+                            <Grid Grid.Column="2" RowDefinitions="Auto,*">
+                                <TextBlock Grid.Row="0"
+                                           Classes="Name"
+                                           Classes.ExcludedFromDuration="{Binding ExcludeFromDurationTotal}"
+                                           TextWrapping="WrapWithOverflow"
+                                           Text="{Binding Name}" />
+                                <TextBlock Grid.Row="1"
+                                           HorizontalAlignment="Left"
+                                           Classes="Description"
+                                           Text="{Binding Description}"
+                                           TextWrapping="WrapWithOverflow" />
+                            </Grid>
                         </Grid>
                     </Border>
                 </ContentControl>
