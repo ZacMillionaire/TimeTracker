@@ -6,8 +6,7 @@
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <VersionPrefix>0.0.3-autocomplete-fixes</VersionPrefix>
-        <VersionSuffix>1</VersionSuffix>
+        <VersionPrefix>0.0.3</VersionPrefix>
         <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
     </PropertyGroup>
 
