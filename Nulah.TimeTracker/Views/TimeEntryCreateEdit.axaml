@@ -43,7 +43,7 @@
         <ColorPicker Color="{Binding Colour}" HorizontalAlignment="Left" />
 
         <Label Content="Description" />
-        <TextBox Watermark="Start typing..." MinLines="5" Text="{Binding Description}" />
+        <TextBox Watermark="Start typing..." MinLines="5" TextWrapping="WrapWithOverflow" Text="{Binding Description}" />
 
         <Label Content="Date" />
         <DatePicker SelectedDate="{Binding SelectedDate}" />

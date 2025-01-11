@@ -115,7 +115,7 @@
                                            Padding="5,0"
                                            Text="{Binding End, StringFormat='hh:mm'}" />
                             </Grid>
-                            <Grid Grid.Column="2" RowDefinitions="*,*">
+                            <Grid Grid.Column="2" RowDefinitions="Auto,*">
                                 <TextBlock Grid.Row="0"
                                            Classes="Name"
                                            Classes.ExcludedFromDuration="{Binding ExcludeFromDurationTotal}"
