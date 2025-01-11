@@ -137,6 +137,7 @@ public class TimeTrackerRepository
 				Name = x.Key.Name,
 				Descriptions = x.Where(y => !string.IsNullOrWhiteSpace(y.Description))
 					.Select(y => y.Description!)
+					.Distinct()
 					.Take(5)
 					.ToList()
 			});
