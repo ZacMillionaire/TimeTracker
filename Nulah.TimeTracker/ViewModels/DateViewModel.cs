@@ -177,7 +177,7 @@ public class DateViewModel : ViewModelBase
 	{
 		LoadWeekFromDate(_selectedTimeSummary.SummarisedTimeEntryDto.Date.AddDays(7));
 	}
-	
+
 	private void TimeEntryModified(TimeEntryDto createdTimeEntry, TimeEntryModifyAction modifyAction)
 	{
 		// TODO: private method should not invoke the UIThread dispatcher
@@ -388,13 +388,12 @@ public class DateViewModel : ViewModelBase
 	/// <param name="timeManager"></param>
 	private void UpdateTimeEntrySummaryForDate(DateTimeOffset date, TimeManager timeManager)
 	{
-		var loadedSummary = LoadedWeekSummaryCache.Lookup(date.Date);
-
-		// Don't attempt to update a summary for a date that isn't loaded.
-		if (!loadedSummary.HasValue)
+		if (LoadedWeekSummaryCache.Lookup(date.Date) is not { HasValue: true } existingSummary)
 		{
 			return;
 		}
+
+		var loadedSummary = existingSummary.Value;
 
 		// set to start of day to only capture time entries for today
 		// TODO: this can probably be improved
@@ -411,16 +410,19 @@ public class DateViewModel : ViewModelBase
 		// TODO: do nothing if the date param does not exist in the loaded week summary
 		if (summaries.SingleOrDefault() is { } foundSummary)
 		{
-			loadedSummary.Value.SummarisedTimeEntryDto.Summaries = foundSummary.Summaries;
+			loadedSummary.SummarisedTimeEntryDto.Summaries = foundSummary.Summaries;
 		}
 		else
 		{
 			// Clear the summaries for the summarised time entry as there are no longer any time entries associated to it
-			loadedSummary.Value.SummarisedTimeEntryDto.Summaries = [];
+			loadedSummary.SummarisedTimeEntryDto.Summaries = [];
 		}
 
-		loadedSummary.Value.Selected = true;
-		LoadedWeekSummaryCache.AddOrUpdate(loadedSummary.Value);
+		// ugly hacky quick solution to get total duration to update without refactoring a bunch of things into a view model
+		loadedSummary.TotalDuration = loadedSummary.SummarisedTimeEntryDto.DurationWithExclusions;
+
+		loadedSummary.Selected = true;
+		LoadedWeekSummaryCache.AddOrUpdate(loadedSummary);
 	}
 
 	/// <summary>
@@ -446,10 +448,28 @@ public class DateViewModel : ViewModelBase
 
 public class DateViewDesignModel : DateViewModel
 {
+	private static Random _random = new(1);
+
+	private static List<SummarisedTimeEntryViewModel> _pretendSummarisedTimeEntryViewModels = Enumerable.Range(0, 7)
+		.Select(x => new SummarisedTimeEntryViewModel(new SummarisedTimeEntryDto
+		{
+			Date = DateTimeOffset.Now.AddDays(-3 + x).Date,
+			Summaries = Enumerable.Range(0, 6)
+				.Select(y => new TimeEntrySummaryDto
+				{
+					Duration = new TimeSpan(0, _random.Next(0, 180), 0),
+					Colour = Color.FromRgb(
+						(byte)_random.Next(0, 255),
+						(byte)_random.Next(0, 255),
+						(byte)_random.Next(0, 255)
+					).ToUInt32()
+				})
+				.ToList()
+		}))
+		.ToList();
+
 	public DateViewDesignModel()
 	{
-		var r = new Random();
-
 		List<string?> descriptions =
 		[
 			"test text test text test text test text test text test text",
@@ -462,7 +482,7 @@ public class DateViewDesignModel : DateViewModel
 
 		List<string> names =
 		[
-			"short name",
+			"asdf name",
 			"a",
 			"somewhat longer name but not that long",
 			"lmao, lol even Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco"
@@ -470,24 +490,7 @@ public class DateViewDesignModel : DateViewModel
 
 		LoadedWeekSummaryCache.Edit(cache =>
 		{
-			var pretendSummarisedTimeEntryViewModels = Enumerable.Range(0, 7)
-				.Select(x => new SummarisedTimeEntryViewModel(new SummarisedTimeEntryDto
-				{
-					Date = DateTimeOffset.Now.AddDays(-3 + x).Date,
-					Summaries = Enumerable.Range(0, 6)
-						.Select(y => new TimeEntrySummaryDto
-						{
-							Duration = new TimeSpan(0, r.Next(0, 180), 0),
-							Colour = Color.FromRgb(
-								(byte)r.Next(0, 255),
-								(byte)r.Next(0, 255),
-								(byte)r.Next(0, 255)
-							).ToUInt32()
-						})
-						.ToList()
-				}))
-				.ToList();
-			cache.Load(pretendSummarisedTimeEntryViewModels);
+			cache.Load(_pretendSummarisedTimeEntryViewModels);
 		});
 
 		SelectedTimeSummary = TimeEntrySummaries.First();
@@ -501,8 +504,8 @@ public class DateViewDesignModel : DateViewModel
 				{
 					Id = id++,
 					Colour = x.Colour,
-					Name = names[r.Next(0, names.Count)],
-					Description = descriptions[r.Next(0, descriptions.Count)],
+					Name = names[_random.Next(0, names.Count)],
+					Description = descriptions[_random.Next(0, descriptions.Count)],
 					Start = DateTimeOffset.Now,
 					End = DateTimeOffset.Now.Add(x.Duration!.Value),
 				});

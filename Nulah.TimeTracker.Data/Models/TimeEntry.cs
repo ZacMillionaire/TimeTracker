@@ -22,4 +22,10 @@ internal partial class TimeEntry : BaseEntity
 
 	[MemoryPackOrder(4)]
 	public uint? Colour { get; set; }
+
+	/// <summary>
+	/// Hint that the time for this entry be excluded from any durations 
+	/// </summary>
+	[MemoryPackOrder(5)]
+	public bool ExcludeFromDurationTotal { get; set; }
 }

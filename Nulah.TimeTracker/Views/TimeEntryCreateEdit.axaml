@@ -94,6 +94,7 @@
             <Run Text="Duration:" />
             <Run Text="{Binding Duration, StringFormat='h\\hmm\\m'}" />
         </TextBlock>
+        <CheckBox IsChecked="{Binding ExcludeFromDurationTotal}">Exclude from duration totals</CheckBox>
         <UniformGrid Columns="2">
             <Button Margin="2.5,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                     Command="{Binding ClearTimeEntryCommand}"

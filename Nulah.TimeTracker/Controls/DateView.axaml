@@ -97,8 +97,27 @@
             </Grid>
         </Border>
         <!-- end header date group -->
+        <Border Grid.Row="2">
+            <Border.Styles>
+                <Style Selector="Border">
+                    <Setter Property="BorderThickness" Value="0,0,0,1" />
+                    <Setter Property="BorderBrush" Value="#EBEBEB" />
+                </Style>
+            </Border.Styles>
+            <StackPanel DataContext="{Binding SelectedTimeSummary}"
+                        IsVisible="{Binding  SummarisedTimeEntryDto.Summaries.Count}"
+                        HorizontalAlignment="Right">
+                <TextBlock TextAlignment="Right">
+                    Total Duration
+                </TextBlock>
+                <TextBlock TextAlignment="Right">
+                    <Run FontSize="20" FontWeight="Bold" Text="{Binding  TotalDuration.Hours}" />hours
+                    <Run FontSize="20" FontWeight="Bold" Text="{Binding  TotalDuration.Minutes}" />minutes
+                </TextBlock>
+            </StackPanel>
+        </Border>
         <!-- time entries for selected date -->
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="3">
             <ItemsControl ItemsSource="{Binding SelectedDateTimeEntries}">
                 <ItemsControl.Template>
                     <ControlTemplate>
