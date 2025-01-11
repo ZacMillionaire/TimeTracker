@@ -28,4 +28,8 @@ internal partial class TimeEntry : BaseEntity
 	/// </summary>
 	[MemoryPackOrder(5)]
 	public bool ExcludeFromDurationTotal { get; set; }
+
+	[MemoryPackOrder(6)]
+	[Indexed]
+	public string FullText { get; set; } = null!;
 }

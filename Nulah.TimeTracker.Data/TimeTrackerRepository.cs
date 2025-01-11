@@ -37,8 +37,10 @@ public class TimeTrackerRepository
 			Start = newTimeEntry.Start,
 			End = newTimeEntry.End,
 			Colour = newTimeEntry.Colour,
-			ExcludeFromDurationTotal = newTimeEntry.ExcludeFromDurationTotal
+			ExcludeFromDurationTotal = newTimeEntry.ExcludeFromDurationTotal,
 		};
+
+		newEntry.FullText = CreateFullText(newEntry);
 
 		var db = GetConnection();
 		db.Insert(newEntry);
@@ -63,6 +65,7 @@ public class TimeTrackerRepository
 		updatingEntry.End = newEntry.End;
 		updatingEntry.Colour = newEntry.Colour;
 		updatingEntry.ExcludeFromDurationTotal = newEntry.ExcludeFromDurationTotal;
+		updatingEntry.FullText = CreateFullText(updatingEntry);
 
 		db.Update(updatingEntry);
 
@@ -121,7 +124,7 @@ public class TimeTrackerRepository
 	{
 		var criteria = new TimeEntryQueryCriteria()
 		{
-			TaskName = searchTerm
+			FullTextSearch = searchTerm?.ToUpper()
 		};
 
 		var connection = GetConnection();
@@ -164,6 +167,11 @@ public class TimeTrackerRepository
 		return new SQLiteConnection(_databaseLocation);
 	}
 
+	private string CreateFullText(TimeEntry entry)
+	{
+		return $"{entry.Name.ToUpper()}{entry.Description?.ToUpper()}";
+	}
+
 	/// <summary>
 	/// Creates a predicate for linq to sql to filter transactions as appropriate.
 	/// </summary>
@@ -180,6 +188,11 @@ public class TimeTrackerRepository
 		if (!string.IsNullOrWhiteSpace(timeEntryQueryCriteria.TaskName))
 		{
 			baseFunc = baseFunc.And(x => x.Name.Contains(timeEntryQueryCriteria.TaskName));
+		}
+
+		if (!string.IsNullOrWhiteSpace(timeEntryQueryCriteria.FullTextSearch))
+		{
+			baseFunc = baseFunc.And(x => x.FullText.Contains(timeEntryQueryCriteria.FullTextSearch));
 		}
 
 		if (timeEntryQueryCriteria.From.HasValue)
@@ -214,16 +227,16 @@ public class SummarisedTimeEntryDto
 	/// </summary>
 	public TimeSpan Duration => new(
 		Summaries
-			.Where(x => x is { Duration: not null})
+			.Where(x => x is { Duration: not null })
 			.Sum(x => x.Duration!.Value.Ticks)
 	);
-	
+
 	/// <summary>
 	/// Total timespan not including excluded entries 
 	/// </summary>
 	public TimeSpan DurationWithExclusions => new(
 		Summaries
-			.Where(x => x is { Duration: not null, ExcludeFromDurationTotal: false})
+			.Where(x => x is { Duration: not null, ExcludeFromDurationTotal: false })
 			.Sum(x => x.Duration!.Value.Ticks)
 	);
 }
