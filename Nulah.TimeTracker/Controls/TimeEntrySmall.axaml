@@ -42,7 +42,8 @@
                             <Setter Property="FontStyle" Value="Italic" />
                         </Style>
                         <Style Selector="Grid.Content">
-                            <Setter Property="Background" Value="{Binding Colour, Converter={StaticResource LightColourConverter}}" />
+                            <Setter Property="Background"
+                                    Value="{Binding Colour, Converter={StaticResource LightColourConverter}}" />
                         </Style>
                         <Style Selector="Grid.Content.ExcludedFromDuration">
                             <Setter Property="Background" Value="#eeeeee" />
@@ -78,9 +79,11 @@
                                     Width="10"
                                     Background="{Binding Colour, Converter={StaticResource ColourConverter}}" />
                             <Grid Grid.Column="1" Grid.Row="0"
+                                  Width="60"
                                   RowDefinitions="Auto,*,Auto">
                                 <TextBlock Classes="Start"
                                            Grid.Row="0"
+                                           HorizontalAlignment="Center"
                                            Padding="5,0"
                                            Text="{Binding Start, StringFormat='hh:mm'}">
                                 </TextBlock>
@@ -108,9 +111,31 @@
                                             Background="#D6D6D6"
                                             CornerRadius="0,0,5,5" />
                                 </Grid>
+                                <Grid Grid.Row="1" Grid.RowSpan="2" RowDefinitions="*,Auto"
+                                      IsVisible="{Binding DurationTimeSpan,
+                                                        RelativeSource={
+                                                            RelativeSource TemplatedParent
+                                                        }, 
+                                                        Converter={
+                                                            x:Static ObjectConverters.IsNull
+                                                        }
+                                                    }">
+                                    <Border Grid.Row="0"
+                                            Width="5"
+                                            MinHeight="25"
+                                            Background="#D6D6D6"
+                                            CornerRadius="5" />
+                                    <Border Grid.Row="1"
+                                            Width="5"
+                                            Height="5"
+                                            Margin="0,5"
+                                            Background="#D6D6D6"
+                                            CornerRadius="5" />
+                                </Grid>
                                 <!-- duration spacer end -->
                                 <TextBlock Classes="End"
                                            Grid.Row="2"
+                                           HorizontalAlignment="Center"
                                            VerticalAlignment="Bottom"
                                            Padding="5,0"
                                            Text="{Binding End, StringFormat='hh:mm'}" />
