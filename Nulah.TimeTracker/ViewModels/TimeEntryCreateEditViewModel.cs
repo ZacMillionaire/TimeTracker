@@ -348,7 +348,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 				return Task.FromResult<IEnumerable<object>>(Array.Empty<object>());
 			}
 
-			Console.WriteLine("Loading autocomplete");
+			Console.WriteLine($"{DateTime.Now:o} Loading autocomplete");
 
 			return Task.FromResult<IEnumerable<object>>(_timeManager.GetAggregatedSearchSuggestions(searchString));
 		}
@@ -358,6 +358,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 
 	public void SetNameAndColourFromSelectedSuggestion(TimeEntrySearchAggregatedSuggestion selectedSuggestion)
 	{
+		Console.WriteLine($"{DateTime.Now:o} set from selection");
 		TaskName = selectedSuggestion.Name;
 		Colour = selectedSuggestion.Colour != null
 			? Color.FromUInt32(selectedSuggestion.Colour.Value)

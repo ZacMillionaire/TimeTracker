@@ -1,4 +1,5 @@
-﻿using System.Reactive.Disposables;
+﻿using System;
+using System.Reactive.Disposables;
 using Avalonia.Controls;
 using Avalonia.ReactiveUI;
 using Nulah.TimeTracker.Domain.Models;
@@ -25,13 +26,13 @@ public partial class TimeEntryCreateEdit : ReactiveUserControl<TimeEntryCreateEd
 
 	private void AutoCompleteBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
 	{
-		// TODO: reimplement this as not an auto complete box because it raises selection events once the asyncpopulator
-		// returns.
-		// It's dumb and I don't care to work around it
-		if (sender is AutoCompleteBox && e.AddedItems is [TimeEntrySearchAggregatedSuggestion selectedSuggestion])
+		if (sender is not AutoCompleteBox { SelectedItem: TimeEntrySearchAggregatedSuggestion s })
 		{
-			ViewModel?.SetNameAndColourFromSelectedSuggestion(selectedSuggestion);
-			e.Handled = true;
+			return;
 		}
+
+		Console.WriteLine($"{DateTime.Now:o} Selection changed");
+		ViewModel?.SetNameAndColourFromSelectedSuggestion(s);
+		e.Handled = true;
 	}
 }
