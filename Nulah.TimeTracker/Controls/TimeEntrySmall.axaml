@@ -15,6 +15,10 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <ContentControl>
+                    <ContentControl.Resources>
+                        <converters:ColourConverter x:Key="ColourConverter" />
+                        <converters:LightenColourConverter x:Key="LightColourConverter" />
+                    </ContentControl.Resources>
                     <ContentControl.Styles>
                         <Style Selector="TextBlock.Start, TextBlock.End">
                             <Setter Property="FontSize" Value="16" />
@@ -31,16 +35,19 @@
                             <Setter Property="FontSize" Value="18" />
                         </Style>
                         <Style Selector="TextBlock.ExcludedFromDuration">
-                            <Setter Property="Foreground" Value="Gray"/>
+                            <Setter Property="Foreground" Value="Gray" />
                         </Style>
                         <Style Selector="TextBlock.Description">
                             <Setter Property="FontWeight" Value="Normal" />
                             <Setter Property="FontStyle" Value="Italic" />
                         </Style>
+                        <Style Selector="Grid.Content">
+                            <Setter Property="Background" Value="{Binding Colour, Converter={StaticResource LightColourConverter}}" />
+                        </Style>
+                        <Style Selector="Grid.Content.ExcludedFromDuration">
+                            <Setter Property="Background" Value="#eeeeee" />
+                        </Style>
                     </ContentControl.Styles>
-                    <ContentControl.Resources>
-                        <converters:ColourConverter x:Key="ColourConverter" />
-                    </ContentControl.Resources>
                     <Border Name="TimeEntryBorder">
                         <Border.Styles>
                             <Style Selector="Border">
@@ -64,11 +71,13 @@
                                          }" />
                             </Style>
                         </Border.Styles>
-                        <Grid RowDefinitions="*,*" ColumnDefinitions="Auto,Auto,*">
-                            <Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"
+                        <Grid ColumnDefinitions="Auto,Auto,*"
+                              Classes="Content"
+                              Classes.ExcludedFromDuration="{Binding ExcludeFromDurationTotal}">
+                            <Border Grid.Row="0" Grid.Column="0"
                                     Width="10"
                                     Background="{Binding Colour, Converter={StaticResource ColourConverter}}" />
-                            <Grid Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
+                            <Grid Grid.Column="1" Grid.Row="0"
                                   RowDefinitions="Auto,*,Auto">
                                 <TextBlock Classes="Start"
                                            Grid.Row="0"
@@ -106,15 +115,18 @@
                                            Padding="5,0"
                                            Text="{Binding End, StringFormat='hh:mm'}" />
                             </Grid>
-                            <TextBlock Grid.Column="2" Grid.Row="0"
-                                       Classes="Name"
-                                       Classes.ExcludedFromDuration="{Binding ExcludeFromDurationTotal}"
-                                       Text="{Binding Name}" />
-                            <TextBlock Grid.Column="2" Grid.Row="1"
-                                       HorizontalAlignment="Left"
-                                       Classes="Description"
-                                       Text="{Binding Description}"
-                                       TextWrapping="WrapWithOverflow" />
+                            <Grid Grid.Column="2" RowDefinitions="*,*">
+                                <TextBlock Grid.Row="0"
+                                           Classes="Name"
+                                           Classes.ExcludedFromDuration="{Binding ExcludeFromDurationTotal}"
+                                           TextWrapping="WrapWithOverflow"
+                                           Text="{Binding Name}" />
+                                <TextBlock Grid.Row="1"
+                                           HorizontalAlignment="Left"
+                                           Classes="Description"
+                                           Text="{Binding Description}"
+                                           TextWrapping="WrapWithOverflow" />
+                            </Grid>
                         </Grid>
                     </Border>
                 </ContentControl>

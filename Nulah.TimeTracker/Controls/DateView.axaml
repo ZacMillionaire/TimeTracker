@@ -97,16 +97,16 @@
             </Grid>
         </Border>
         <!-- end header date group -->
-        <Border Grid.Row="2">
+        <!-- duration summary -->
+        <Border Grid.Row="2" DataContext="{Binding SelectedTimeSummary}"
+                IsVisible="{Binding  SummarisedTimeEntryDto.Summaries.Count}">
             <Border.Styles>
                 <Style Selector="Border">
                     <Setter Property="BorderThickness" Value="0,0,0,1" />
                     <Setter Property="BorderBrush" Value="#EBEBEB" />
                 </Style>
             </Border.Styles>
-            <StackPanel DataContext="{Binding SelectedTimeSummary}"
-                        IsVisible="{Binding  SummarisedTimeEntryDto.Summaries.Count}"
-                        HorizontalAlignment="Right">
+            <StackPanel HorizontalAlignment="Right">
                 <TextBlock TextAlignment="Right">
                     Total Duration
                 </TextBlock>
@@ -116,6 +116,7 @@
                 </TextBlock>
             </StackPanel>
         </Border>
+        <!-- end duration summary -->
         <!-- time entries for selected date -->
         <Grid Grid.Row="3">
             <ItemsControl ItemsSource="{Binding SelectedDateTimeEntries}">
