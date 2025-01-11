@@ -339,16 +339,16 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 
 	private Task<IEnumerable<object>> GetAggregateSearchSuggestions(string? searchString, CancellationToken cancellationToken)
 	{
+		if (_timeEntryLoading)
+		{
+			Console.WriteLine($"{DateTime.Now:o} Autocomplete search ignored due to time entry being loaded");
+
+			return Task.FromResult<IEnumerable<object>>(Array.Empty<object>());
+		}
+
 		if (_timeManager != null)
 		{
-			if (_timeEntryLoading)
-			{
-				Console.WriteLine("autocomplete ignored due to time entry being loaded");
-
-				return Task.FromResult<IEnumerable<object>>(Array.Empty<object>());
-			}
-
-			Console.WriteLine("Loading autocomplete");
+			Console.WriteLine($"{DateTime.Now:o} Loading autocomplete");
 
 			return Task.FromResult<IEnumerable<object>>(_timeManager.GetAggregatedSearchSuggestions(searchString));
 		}
@@ -358,6 +358,7 @@ public class TimeEntryCreateEditViewModel : ValidatingViewModelBase
 
 	public void SetNameAndColourFromSelectedSuggestion(TimeEntrySearchAggregatedSuggestion selectedSuggestion)
 	{
+		Console.WriteLine($"{DateTime.Now:o} set from selection");
 		TaskName = selectedSuggestion.Name;
 		Colour = selectedSuggestion.Colour != null
 			? Color.FromUInt32(selectedSuggestion.Colour.Value)

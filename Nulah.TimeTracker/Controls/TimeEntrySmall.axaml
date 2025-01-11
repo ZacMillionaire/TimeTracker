@@ -37,6 +37,10 @@
                         <Style Selector="TextBlock.ExcludedFromDuration">
                             <Setter Property="Foreground" Value="Gray" />
                         </Style>
+                        <Style Selector="TextBlock.Duration.ExcludedFromDuration">
+                            <Setter Property="Foreground" Value="Gray" />
+                            <Setter Property="TextDecorations" Value="Strikethrough"/>
+                        </Style>
                         <Style Selector="TextBlock.Description">
                             <Setter Property="FontWeight" Value="Normal" />
                             <Setter Property="FontStyle" Value="Italic" />
@@ -89,20 +93,22 @@
                                 </TextBlock>
                                 <!-- duration spacer -->
                                 <Grid Grid.Row="1" RowDefinitions="*,Auto,*"
-                                      IsVisible="{Binding Converter={x:Static ObjectConverters.IsNotNull}}"
-                                      DataContext="{Binding 
-                                                    DurationTimeSpan,
-                                                     RelativeSource={
-                                                         RelativeSource TemplatedParent
-                                                     }
-                                                    }">
+                                      IsVisible="{Binding Converter={x:Static ObjectConverters.IsNotNull}}">
                                     <Border Grid.Row="0"
                                             Width="5"
                                             MinHeight="10"
                                             Background="#D6D6D6"
                                             CornerRadius="5,5,0,0" />
                                     <TextBlock Grid.Row="1"
-                                               Text="{Binding StringFormat='h\\hmm\\m'}"
+                                               Classes="Duration"
+                                               Classes.ExcludedFromDuration="{Binding  ExcludeFromDurationTotal}"
+                                               Text="{
+                                                   Binding DurationTimeSpan,
+                                                   RelativeSource={
+                                                        RelativeSource TemplatedParent
+                                                   }, 
+                                                   StringFormat='h\\hmm\\m'
+                                               }"
                                                TextAlignment="Center"
                                                HorizontalAlignment="Center" />
                                     <Border Grid.Row="2"
