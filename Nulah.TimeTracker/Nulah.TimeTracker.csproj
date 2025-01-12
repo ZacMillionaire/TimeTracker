@@ -6,7 +6,8 @@
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <VersionPrefix>0.0.3</VersionPrefix>
+        <VersionPrefix>0.0.3-reindex</VersionPrefix>
+        <VersionSuffix>1</VersionSuffix>
         <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
     </PropertyGroup>
 

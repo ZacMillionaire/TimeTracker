@@ -145,6 +145,24 @@ public class TimeTrackerRepository
 		return matchingEntries.ToList();
 	}
 
+	public void RebuildIndex()
+	{
+		// lazy first pass just to get a way to update indexes for my existing database
+		// TODO: track the last index date somewhere
+		// TODO: update the index periodically based on this date on start up
+		// TODO: make this setting _opt in_ rather than opt out
+		var connection = GetConnection();
+		// TODO: should probably batch this in pages or similar
+		var allEntries = connection.Table<TimeEntry>()
+			.ToList();
+		foreach (var timeEntry in allEntries)
+		{
+			timeEntry.FullText = CreateFullText(timeEntry);
+		}
+
+		connection.UpdateAll(allEntries);
+	}
+
 	private TimeEntryDto MapToDto(TimeEntry newEntry)
 	{
 		return new TimeEntryDto()

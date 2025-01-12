@@ -11,6 +11,7 @@ public class MainWindowViewModelDesignTime : MainWindowViewModel
 	{
 		WindowContent = new TimeEntryCreateEditViewModel();
 		Memory = "123.4MB";
+		AppVersion = "v1.2.3.4-design-C0MM1TH45H";
 	}
 }
 

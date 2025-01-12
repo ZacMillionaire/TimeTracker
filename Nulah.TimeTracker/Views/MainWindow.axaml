@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:Nulah.TimeTracker.Views"
         xmlns:controls="clr-namespace:Nulah.TimeTracker.Controls"
+        xmlns:heroIcons="clr-namespace:HeroIconsAvalonia.Controls;assembly=HeroIconsAvalonia"
         mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="400"
         Width="1000" Height="800"
         x:Class="Nulah.TimeTracker.Views.MainWindow"
@@ -19,7 +20,9 @@
     </Design.DataContext>
 
     <Grid ColumnDefinitions="*,2*" RowDefinitions="*,Auto">
-        <controls:DateView Grid.Row="0" Grid.Column="0" DataContext="{Binding  DateViewModel}" />
+        <Border Grid.Row="0" Grid.Column="0" BorderThickness="0,0,1,0" BorderBrush="#EBEBEB">
+            <controls:DateView DataContext="{Binding  DateViewModel}" />
+        </Border>
         <!-- <views:TimeEntryList Grid.Row="0" Grid.Column="0" DataContext="{Binding  TimeEntryListViewModel}" /> -->
         <ScrollViewer Grid.Row="0" Grid.Column="1">
             <ContentControl Content="{Binding WindowContent}">
@@ -30,10 +33,21 @@
                 </ContentControl.DataTemplates>
             </ContentControl>
         </ScrollViewer>
-        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="5" HorizontalAlignment="Right" Orientation="Horizontal">
-            <TextBlock Text="{Binding Memory}" FontSize="10"/>
-            <TextBlock Foreground="DarkGray" Text="{Binding AppVersion}" FontSize="10"/>
-        </StackPanel>
+
+        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderThickness="0,1,0,0" BorderBrush="#EBEBEB"
+                Padding="3">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                <heroIcons:HeroIcon Grid.Column="0" Type="Cog8Tooth" Min="True" VerticalAlignment="Center" PointerPressed="SettingsButton_OnPointerPressed" />
+                <StackPanel Grid.Column="3" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding Memory}" FontSize="10"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Right"/>
+                    <TextBlock Foreground="DarkGray" Text="{Binding AppVersion}" FontSize="10"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Right" />
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
 
 </Window>
