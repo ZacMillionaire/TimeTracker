@@ -16,6 +16,7 @@ public class TimeTrackerRepository
 		using var db = new SQLiteConnection(databaseLocation);
 
 		db.CreateTable<TimeEntry>();
+		db.CreateTable<Settings>();
 
 		_databaseLocation = databaseLocation;
 	}
@@ -145,7 +146,7 @@ public class TimeTrackerRepository
 		return matchingEntries.ToList();
 	}
 
-	public void RebuildIndex()
+	public DateTimeOffset RebuildIndex()
 	{
 		// lazy first pass just to get a way to update indexes for my existing database
 		// TODO: track the last index date somewhere
@@ -161,6 +162,48 @@ public class TimeTrackerRepository
 		}
 
 		connection.UpdateAll(allEntries);
+
+		return SetLastIndexRebuild(DateTimeOffset.Now, connection);
+	}
+
+	/// <summary>
+	/// Returns the date the index was last rebuilt, or null if it has never been built
+	/// </summary>
+	/// <returns></returns>
+	public DateTimeOffset? GetLastIndexRebuildDate()
+	{
+		var connection = GetConnection();
+		var indexSetting = connection.Table<Settings>()
+			.FirstOrDefault(x => x.Setting == "LastIndexRebuild");
+
+		if (DateTimeOffset.TryParse(indexSetting?.Value, out var lastRebuildDate))
+		{
+			return lastRebuildDate;
+		}
+
+		return null;
+	}
+
+	private DateTimeOffset SetLastIndexRebuild(DateTimeOffset updateTime, SQLiteConnection connection)
+	{
+		var settingsTable = connection.Table<Settings>();
+
+		if (settingsTable.FirstOrDefault(x => x.Setting == "LastIndexRebuild") is {} rebuildIndexDateSetting)
+		{
+			rebuildIndexDateSetting.Value = updateTime.ToString();
+			connection.Update(rebuildIndexDateSetting);
+		}
+		else
+		{
+			var newRebuildDate = new Settings()
+			{
+				Setting = "LastIndexRebuild",
+				Value = updateTime.ToString()
+			};
+			connection.Insert(newRebuildDate);
+		}
+		
+		return updateTime;
 	}
 
 	private TimeEntryDto MapToDto(TimeEntry newEntry)

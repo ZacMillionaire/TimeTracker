@@ -17,6 +17,8 @@ public partial class SettingsWindow : Window
 		InitializeComponent();
 		// TODO: being lazy and just pulling this in here, but also: it's totally fine this is a desktop app
 		_timeTrackerRepository = Locator.Current.GetService<TimeTrackerRepository>();
+		// TODO: bind this to a view model
+		LastIndexDate.Text = _timeTrackerRepository.GetLastIndexRebuildDate()?.ToString("f");
 	}
 	
 	private void InputElement_OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -26,6 +28,6 @@ public partial class SettingsWindow : Window
 
 	private void ReindexButton_OnClick(object? sender, RoutedEventArgs e)
 	{
-		_timeTrackerRepository.RebuildIndex();
+		LastIndexDate.Text = _timeTrackerRepository.RebuildIndex().ToString("f");
 	}
 }
