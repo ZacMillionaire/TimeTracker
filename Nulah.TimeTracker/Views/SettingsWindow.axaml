@@ -1,0 +1,28 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:heroIcons="clr-namespace:HeroIconsAvalonia.Controls;assembly=HeroIconsAvalonia"
+        mc:Ignorable="d"
+        SizeToContent="WidthAndHeight"
+        x:Class="Nulah.TimeTracker.Views.SettingsWindow"
+        Background="Transparent">
+    <Border MinWidth="300"
+            MinHeight="300"
+            CornerRadius="5"
+            BorderBrush="#D5D5D5"
+            BorderThickness="2"
+            Background="White">
+        <Grid RowDefinitions="Auto,Auto">
+            <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="#ebebeb" Padding="3"
+                    Background="White"
+                    PointerPressed="InputElement_OnPointerPressed">
+                <heroIcons:HeroIcon Type="XMark" Min="True" HorizontalAlignment="Right" />
+            </Border>
+            <StackPanel Grid.Row="1">
+                <Button Click="ReindexButton_OnClick">Reindex</Button>
+                <TextBlock x:Name="LastIndexDate"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

@@ -33,6 +33,9 @@ public partial class App : Application
 	{
 		if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
 		{
+			// TODO: move this into a boostrapper later
+			RebuildIndexIfRequired();
+
 			desktop.MainWindow = new MainWindow
 			{
 				DataContext = new MainWindowViewModel()
@@ -77,6 +80,19 @@ public partial class App : Application
 	{
 		using var proc = Process.GetCurrentProcess();
 		return proc.MainModule.FileVersionInfo.ProductVersion;
+	}
+
+	/// <summary>
+	/// Checks if the index needs to be rebuilt based on the last index rebuild.
+	/// </summary>
+	private void RebuildIndexIfRequired()
+	{
+		// TODO: rebuild the index based on date time as well as if its never been rebuilt
+		var timeTrackerRepository = GetOrThrowOnServiceNull<TimeTrackerRepository>();
+		if (timeTrackerRepository.GetLastIndexRebuildDate() == null)
+		{
+			timeTrackerRepository.RebuildIndex();
+		}
 	}
 
 	private static void AddCommonServices()
